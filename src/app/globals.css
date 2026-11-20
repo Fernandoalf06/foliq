@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+:root {
+  --ground: #f5f6f8;
+  --surface-1: #ffffff;
+  --surface-2: #eceff4;
+  --border: #d8dee9;
+  --ink: #0f172a;
+  --ink-muted: #475569;
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
+  --accent-text: #1d4ed8;
+  --accent-soft: #e8efff;
+  --income: #047857;
+  --income-soft: #e6f6ef;
+  --expense: #be123c;
+  --expense-soft: #fdecef;
+  --warning: #b45309;
+  --warning-soft: #fef3c7;
+
+  /* Restrained Liquid Glass tokens (dock & sheet chrome only per DESIGN.md) */
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.72);
+  --glass-ring: rgba(15, 23, 42, 0.08);
+  --glass-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.dark {
+  --ground: #000000;
+  --surface-1: #111215;
+  --surface-2: #1a1c22;
+  --border: #272b34;
+  --ink: #f1f5f9;
+  --ink-muted: #94a3b8;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-text: #60a5fa;
+  --accent-soft: rgba(37, 99, 235, 0.18);
+  --income: #34d399;
+  --income-soft: rgba(52, 211, 153, 0.14);
+  --expense: #fb7185;
+  --expense-soft: rgba(251, 113, 133, 0.14);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.14);
+
+  --glass-bg: rgba(20, 22, 27, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-ring: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+@layer base {
+  html {
+    background-color: var(--ground);
+    color: var(--ink);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* R-39: explicit pointer affordance on all enabled interactive controls */
+  a[href],
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  label[for],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  /* R-32: high-contrast visible keyboard focus ring in both themes */
+  :focus-visible {
+    outline: 2px solid var(--accent-text);
+    outline-offset: 2px;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Restrained Liquid Glass surface: strictly limited to floating dock and quick-entry sheet chrome */
+.liquid-glass {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), 0 0 0 1px var(--glass-ring);
+}
+
+.safe-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

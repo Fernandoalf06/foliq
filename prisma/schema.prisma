@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WalletType {
+  CASH
+  BANK
+  EWALLET
+  CREDIT
+  SAVINGS
+}
+
+enum CategoryType {
+  EXPENSE
+  INCOME
+}
+
+enum TransactionType {
+  EXPENSE
+  INCOME
+  TRANSFER
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique
+  name         String
+  passwordHash String        @map("password_hash")
+  currency     String        @default("IDR")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  sessions     Session[]
+  wallets      Wallet[]
+  categories   Category[]
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  userId    String   @map("user_id") @db.Uuid
+  userAgent String?  @map("user_agent")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Wallet {
+  id             String     @id @default(uuid()) @db.Uuid
+  userId         String     @map("user_id") @db.Uuid
+  name           String
+  type           WalletType @default(BANK)
+  initialBalance Decimal    @default(0) @map("initial_balance") @db.Decimal(15, 2)
+  currency       String     @default("IDR")
+  isArchived     Boolean    @default(false) @map("is_archived")
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outgoingTransactions Transaction[] @relation("SourceWallet")
+  incomingTransfers    Transaction[] @relation("TargetWallet")
+
+  @@index([userId])
+  @@map("wallets")
+}
+
+model Category {
+  id        String       @id @default(uuid()) @db.Uuid
+  userId    String       @map("user_id") @db.Uuid
+  name      String
+  type      CategoryType
+  icon      String       @default("tag")
+  isDefault Boolean      @default(false) @map("is_default")
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([userId, name, type])
+  @@index([userId])
+  @@map("categories")
+}
+
+model Transaction {
+  id             String          @id @default(uuid()) @db.Uuid
+  userId         String          @map("user_id") @db.Uuid
+  type           TransactionType
+  amount         Decimal         @db.Decimal(15, 2)
+  walletId       String          @map("wallet_id") @db.Uuid
+  targetWalletId String?         @map("target_wallet_id") @db.Uuid
+  categoryId     String?         @map("category_id") @db.Uuid
+  note           String          @default("")
+  occurredAt     DateTime        @default(now()) @map("occurred_at") @db.Timestamptz
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet       Wallet    @relation("SourceWallet", fields: [walletId], references: [id], onDelete: Restrict)
+  targetWallet Wallet?   @relation("TargetWallet", fields: [targetWalletId], references: [id], onDelete: Restrict)
+  category     Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, occurredAt(sort: Desc)])
+  @@index([walletId])
+  @@index([targetWalletId])
+  @@index([categoryId])
+  @@map("transactions")
+}
+
+model Budget {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  categoryId  String   @map("category_id") @db.Uuid
+  month       String
+  limitAmount Decimal  @map("limit_amount") @db.Decimal(15, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, month])
+  @@index([userId, month])
+  @@map("budgets")
+}

@@ -1,0 +1,34 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# Next.js build output
+/.next/
+/out/
+/build
+
+# Prisma generated client
+/src/generated/
+
+# Environment & Secrets (NEVER commit real secrets)
+.env
+.env.*
+!.env.example
+
+# Vercel local linking
+.vercel
+
+# Logs & OS artifacts
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
+# TypeScript & Testing
+*.tsbuildinfo
+next-env.d.ts
+/coverage
+/playwright-report
+/test-results
