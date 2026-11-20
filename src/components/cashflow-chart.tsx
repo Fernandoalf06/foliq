@@ -70,7 +70,7 @@ export function CashflowChart({
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
-            margin={{ top: 6, right: 4, left: -16, bottom: 0 }}
+            margin={{ top: 6, right: 8, left: 4, bottom: 0 }}
             barGap={4}
           >
             <CartesianGrid
@@ -85,6 +85,7 @@ export function CashflowChart({
               tick={{ fill: "var(--ink-muted)", fontSize: 12 }}
             />
             <YAxis
+              width={62}
               tickLine={false}
               axisLine={false}
               tick={{ fill: "var(--ink-muted)", fontSize: 11 }}

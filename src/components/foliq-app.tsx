@@ -543,11 +543,11 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
       {/* Main Column */}
       <div className="lg:pl-64">
         {/* Compact Sticky Header */}
-        <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--ground)]/95 px-4 py-3 backdrop-blur-sm safe-top sm:px-6">
-          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 lg:hidden">
+        <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--ground)]/95 px-3 py-2.5 backdrop-blur-sm safe-top sm:px-6">
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
+            <div className="flex shrink-0 items-center gap-2 lg:hidden">
               <FoliqMark className="h-7 w-7" />
-              <span className="text-base font-bold tracking-tight text-[var(--ink)]">
+              <span className="hidden text-base font-bold tracking-tight text-[var(--ink)] min-[360px]:inline">
                 Foliq
               </span>
             </div>
@@ -565,30 +565,30 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
             </div>
 
             {/* Month Switcher */}
-            <div className="flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-1">
+            <div className="flex min-w-0 items-center gap-0.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-0.5 sm:gap-1 sm:p-1">
               <button
                 type="button"
                 onClick={() => setMonth((m) => shiftMonth(m, -1))}
                 aria-label="Previous month"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+                className="inline-flex h-10 w-9 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
               >
                 <ChevronLeftIcon className="h-4 w-4" />
               </button>
-              <span className="tabular-nums min-w-[84px] px-1 text-center text-xs font-semibold text-[var(--ink)] sm:text-sm">
+              <span className="tabular-nums min-w-[70px] px-1 text-center text-xs font-semibold text-[var(--ink)] sm:min-w-[84px] sm:text-sm">
                 {monthLabel}
               </span>
               <button
                 type="button"
                 onClick={() => setMonth((m) => shiftMonth(m, 1))}
                 aria-label="Next month"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+                className="inline-flex h-10 w-9 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
               >
                 <ChevronRightIcon className="h-4 w-4" />
               </button>
             </div>
 
             {/* Mobile/Tablet Quick Controls */}
-            <div className="flex items-center gap-1.5 lg:hidden">
+            <div className="flex shrink-0 items-center gap-1.5 lg:hidden">
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -709,13 +709,13 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
                 </div>
 
                 {/* Cashflow Summary Stack */}
-                <div className="grid grid-cols-2 gap-3 md:col-span-5 md:grid-cols-1">
-                  <div className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:col-span-5 md:grid-cols-1">
+                  <div className="min-w-0 rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">
                     <p className="text-xs font-semibold text-[var(--ink-muted)]">
                       Income ({monthLabel})
                     </p>
                     <p
-                      className="tabular-nums mt-1.5 text-xl font-bold sm:text-2xl"
+                      className="tabular-nums mt-1.5 break-words text-xl font-bold sm:text-2xl"
                       style={{ color: "var(--income)" }}
                     >
                       {formatCurrency(data.cashflow.income, currency, {
@@ -724,12 +724,12 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
                     </p>
                   </div>
 
-                  <div className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">
+                  <div className="min-w-0 rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">
                     <p className="text-xs font-semibold text-[var(--ink-muted)]">
                       Expenses ({monthLabel})
                     </p>
                     <p
-                      className="tabular-nums mt-1.5 text-xl font-bold sm:text-2xl"
+                      className="tabular-nums mt-1.5 break-words text-xl font-bold sm:text-2xl"
                       style={{ color: "var(--expense)" }}
                     >
                       {formatCurrency(
