@@ -49,6 +49,27 @@ export async function PATCH(
       }
     }
 
+    if (
+      parsed.data.currency !== undefined &&
+      parsed.data.currency !== existing.currency
+    ) {
+      const txCount = await prisma.transaction.count({
+        where: {
+          userId: user.id,
+          OR: [{ walletId: id }, { targetWalletId: id }],
+        },
+      });
+      if (txCount > 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot change currency on a wallet that already has transactions. Create a new wallet in that currency instead.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const updated = await prisma.wallet.update({
       where: { id },
       data: parsed.data,

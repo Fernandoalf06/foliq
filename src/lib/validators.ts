@@ -20,6 +20,7 @@ export const loginSchema = z.object({
 export const walletCreateSchema = z.object({
   name: z.string().trim().min(1, "Wallet name is required").max(40),
   type: z.enum(["CASH", "BANK", "EWALLET", "CREDIT", "SAVINGS"]),
+  currency: z.enum(["IDR", "USD", "SGD", "EUR"]).optional(),
   initialBalance: z.coerce
     .number()
     .finite()
@@ -30,6 +31,7 @@ export const walletCreateSchema = z.object({
 export const walletUpdateSchema = z.object({
   name: z.string().trim().min(1).max(40).optional(),
   type: z.enum(["CASH", "BANK", "EWALLET", "CREDIT", "SAVINGS"]).optional(),
+  currency: z.enum(["IDR", "USD", "SGD", "EUR"]).optional(),
   initialBalance: z.coerce
     .number()
     .finite()
@@ -183,3 +185,60 @@ export const shortcutRecordSchema = z.object({
   note: z.string().trim().max(240).optional().default(""),
   occurredAt: z.string().datetime({ offset: true }).optional(),
 });
+
+export const savingsGoalCreateSchema = z.object({
+  name: z.string().trim().min(1, "Goal name is required").max(60),
+  targetAmount: z.coerce
+    .number()
+    .finite()
+    .positive("Target amount must be greater than 0")
+    .max(999999999999, "Target amount exceeds maximum limit"),
+  currentAmount: z.coerce
+    .number()
+    .finite()
+    .min(0, "Current saved amount cannot be negative")
+    .max(999999999999)
+    .optional()
+    .default(0),
+  currency: z.enum(["IDR", "USD", "SGD", "EUR"]).optional(),
+  targetDate: z.string().datetime({ offset: true }).nullable().optional(),
+  walletId: z.string().uuid().nullable().optional(),
+  note: z.string().trim().max(240).optional().default(""),
+});
+
+export const savingsGoalUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(60).optional(),
+  targetAmount: z.coerce.number().finite().positive().max(999999999999).optional(),
+  currentAmount: z.coerce.number().finite().min(0).max(999999999999).optional(),
+  deltaAmount: z.coerce
+    .number()
+    .finite()
+    .min(-999999999999)
+    .max(999999999999)
+    .optional(),
+  currency: z.enum(["IDR", "USD", "SGD", "EUR"]).optional(),
+  targetDate: z.string().datetime({ offset: true }).nullable().optional(),
+  walletId: z.string().uuid().nullable().optional(),
+  note: z.string().trim().max(240).optional(),
+  isCompleted: z.boolean().optional(),
+});
+
+export const exchangeRateUpsertSchema = z
+  .object({
+    fromCurrency: z.enum(["IDR", "USD", "SGD", "EUR"]),
+    toCurrency: z.enum(["IDR", "USD", "SGD", "EUR"]),
+    rate: z.coerce
+      .number()
+      .finite()
+      .positive("Exchange rate must be greater than 0")
+      .max(1000000000, "Exchange rate out of range"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.fromCurrency === data.toCurrency) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["toCurrency"],
+        message: "Source and target currencies must be different",
+      });
+    }
+  });

@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
           id: created.id,
           type: created.type,
           amount: Number(created.amount.toString()),
-          currency: apiToken.user.currency,
+          currency: resolvedWallet.currency,
           wallet: created.wallet.name,
           category: created.category?.name ?? null,
           note: created.note,

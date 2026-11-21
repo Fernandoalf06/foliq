@@ -6,15 +6,15 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 
 ---
 
-## Key Features (`v0.3.0`)
+## Key Features (`v0.4.0`)
 
-- **Quick Entry, Editing & Offline Capture Queue:** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and **Transfers** with numeric presets, live formatted currency preview, inline editing, and automatic local queueing + auto-sync when capturing expenses offline.
+- **Multi-Currency Wallets & Saved Exchange Rates:** Assign `IDR`, `USD`, `SGD`, or `EUR` per wallet, save custom conversion rates in Settings, and view native wallet balances alongside live converted totals (`≈`) in your Primary Display Currency.
+- **Savings Goals & Sinking Funds:** Create dedicated savings targets (emergency fund, travel, gadgets) inside **Wallets & Goals** with optional target dates, optional linked wallets, quick `+ Add` / `Withdraw` progress controls, and an Overview progress strip.
+- **6-Month & 12-Month Net Worth & Cashflow Trends:** Analyze multi-month **Net Worth** growth curves and **Income vs. Expense** bar trends across `6M` and `12M` windows directly on Overview.
+- **Quick Entry, Editing & Offline Capture Queue:** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and same-currency **Transfers** with wallet-aware currency presets, live formatted previews, inline editing, and automatic local queueing + auto-sync when capturing offline.
 - **Recurring Bills, Subscriptions & Income:** Schedule weekly, monthly, or yearly bills and salary with timezone-aware *Due now* / *Upcoming (7d)* alerts on Overview, atomic one-tap **Record Now** (advancing `nextDueDate` with month-end clamping), and Pause/Resume controls.
 - **Apple Shortcuts Quick Capture API:** Generate revocable `flq_...` Bearer tokens in Settings to trigger instant expense logging from iPhone **Back Tap**, **Action Button**, or **Siri Shortcuts** via `POST /api/shortcuts/record`.
-- **Multi-Wallet Management & Archiving:** Track, edit, archive, and restore Cash, Bank, E-Wallet, Savings, and Credit accounts with exact minor-unit arithmetic (`NUMERIC(15, 2)` via PostgreSQL `groupBy`) and neutral transfers between wallets.
-- **Timezone-Accurate Cashflow & Analytics:** View total net balance, monthly income vs. expenses, savings rate, top spending categories, and a daily cashflow bar chart aligned to your local timezone (e.g., WIB `UTC+7`).
-- **Monthly Category Budgets:** Set monthly caps per expense category with clear pacing status (*On track*, *Near limit* at >= 80%, and *Over budget*), two-step delete confirmations, and custom category creation.
-- **Settings & Vault Controls:** Dedicated Settings view for updating display name and primary currency (`IDR`, `USD`, `SGD`, `EUR`), changing owner password with automatic cross-device session revocation, managing Apple Shortcuts API tokens, toggling Light / OLED Dark mode, and downloading all-time or monthly CSV backups.
+- **Monthly Category Budgets & Custom Categories:** Set monthly caps per expense category with clear pacing status (*On track*, *Near limit* at >= 80%, and *Over budget*), two-step delete confirmations, and custom category creation.
 - **Crisp Utility + Restrained Liquid Glass UI:** Solid high-contrast matte financial cards in Light and OLED Dark modes paired with frosted Liquid Glass strictly on floating navigation chrome.
 - **Single-Owner Security Model:** Designed to be safely open-sourced in a public repository while keeping your live deployment locked exclusively to your configured `OWNER_EMAIL`.
 
@@ -44,13 +44,13 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 ├── DESIGN.md                 # Visual direction, verified WCAG AA palette, Liquid Glass dose cap
 ├── CHANGELOG.md              # Release history (Keep a Changelog + SemVer)
 ├── prisma/
-│   ├── schema.prisma         # PostgreSQL schema (User, Session, Wallet, Category, Transaction, Budget, RecurringRule, ApiToken, AuthRateLimit)
+│   ├── schema.prisma         # PostgreSQL schema (User, Session, Wallet, Category, Transaction, Budget, RecurringRule, SavingsGoal, ExchangeRate, ApiToken, AuthRateLimit)
 │   └── seed.ts               # Safe fictional demo seed (never overwrites existing users)
 ├── public/
 │   └── sw.js                 # Static-asset Service Worker with offline fallback (never caches /api/* or auth HTML)
 └── src/
     ├── app/
-    │   ├── api/              # Auth, Dashboard, Wallets, Transactions, Budgets, Recurring, Categories, Settings/Tokens, Shortcuts, Export CSV
+    │   ├── api/              # Auth, Dashboard, Wallets, Transactions, Budgets, Recurring, Goals, Categories, Settings/Rates/Tokens, Shortcuts, Export CSV
     │   ├── icon-192/         # Dynamic 192x192 PWA icon
     │   ├── icon.tsx          # Dynamic 512x512 maskable PWA icon
     │   ├── apple-icon.tsx    # Dynamic 180x180 iOS Home Screen icon
@@ -58,9 +58,9 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
     │   ├── layout.tsx        # Root layout, font, PWA metadata, no-flash theme init
     │   └── page.tsx          # Server-side auth gate entry
     ├── components/
-    │   ├── tabs/             # OverviewTab, LedgerTab, WalletsTab, BudgetsTab, RecurringSection, SettingsTab, ShortcutsSection
-    │   └── ...               # AuthScreen, FoliqApp, QuickEntrySheet, CashflowChart, TransactionRow, custom SVG icons
-    └── lib/                  # Prisma Neon client, auth/token/rate-limit, CSRF security, exact money/recurring/offline-queue logic, Zod schemas
+    │   ├── tabs/             # OverviewTab, LedgerTab, WalletsTab, GoalsSection, BudgetsTab, RecurringSection, SettingsTab, ExchangeRatesSection, ShortcutsSection
+    │   └── ...               # AuthScreen, FoliqApp, QuickEntrySheet, CashflowChart, TrendChart, TransactionRow, custom SVG icons
+    └── lib/                  # Prisma Neon client, auth/token/rate-limit, CSRF security, money/currency/recurring/offline-queue logic, Zod schemas
 ```
 
 ---
@@ -210,8 +210,9 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 - **v0.1.1:** Local timezone accuracy (WIB/UTC+7), Neon persistent serverless rate limiting, CSV formula injection protection, CSRF Origin check & CSP header, UUID param validation, PostgreSQL `groupBy` wallet balance aggregation, Show/Hide password toggle, live currency preview, two-step wallet/budget delete confirmations, 192px PWA icon, and modular tab decomposition.
 - **v0.2.0:** Edit transactions, inline wallet editing & archived wallet restoration, and dedicated Settings panel (profile/currency, change password with session revocation, all-time CSV backup, appearance & vault info).
 - **v0.2.1:** Password-change persistent rate limiting, Settings feedback persistence fix, Quick Entry transfer/date guardrails, server-side active-wallet & archived-wallet invariants, live currency previews on Wallet/Budget forms, dynamic version display, and mandatory Full Audit Gate in `AGENTS.md`.
-- **v0.3.0 (Current):** Recurring transactions (subscriptions, bills & salary with atomic one-tap recording), local offline capture queue with auto-sync on reconnect, and authenticated Apple Shortcuts webhook + revocable `flq_` API tokens.
-- **v0.4.0 (Planned):** Multi-currency wallets with saved exchange rates, savings goals / sinking funds, and quarterly/annual net-worth trend charts.
+- **v0.3.0:** Recurring transactions (subscriptions, bills & salary with atomic one-tap recording), local offline capture queue with auto-sync on reconnect, and authenticated Apple Shortcuts webhook + revocable `flq_` API tokens.
+- **v0.4.0 (Current):** Multi-currency wallets with saved Neon exchange rates, Savings Goals / Sinking Funds with quick contribute/withdraw progress tracking, and 6M/12M Net Worth & Cashflow trend charts.
+- **v1.0.0 (Planned):** CSV bank statement import wizard, customizable net-worth reports / printable monthly PDF summaries, and final v1.0 stability milestone.
 
 ---
 

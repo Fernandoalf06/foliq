@@ -368,7 +368,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
       : activeTab === "ledger"
         ? "Ledger"
         : activeTab === "wallets"
-          ? "Wallets"
+          ? "Wallets & Goals"
           : activeTab === "budgets"
             ? "Budgets & Recurring"
             : "Settings";
@@ -473,18 +473,18 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
                 type="button"
                 onClick={() => setMonth((m) => shiftMonth(m, -1))}
                 aria-label="Previous month"
-                className="inline-flex h-10 w-9 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+                className="inline-flex h-11 w-10 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] sm:w-11"
               >
                 <ChevronLeftIcon className="h-4 w-4" />
               </button>
-              <span className="tabular-nums min-w-[70px] px-1 text-center text-xs font-semibold text-[var(--ink)] sm:min-w-[84px] sm:text-sm">
+              <span className="tabular-nums min-w-[66px] px-0.5 text-center text-xs font-semibold text-[var(--ink)] sm:min-w-[84px] sm:px-1 sm:text-sm">
                 {monthLabel}
               </span>
               <button
                 type="button"
                 onClick={() => setMonth((m) => shiftMonth(m, 1))}
                 aria-label="Next month"
-                className="inline-flex h-10 w-9 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+                className="inline-flex h-11 w-10 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] sm:w-11"
               >
                 <ChevronRightIcon className="h-4 w-4" />
               </button>
@@ -684,6 +684,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
             <WalletsTab
               wallets={data.wallets}
               archivedWallets={data.archivedWallets}
+              savingsGoals={data.savingsGoals}
               currency={currency}
               onRefresh={() => loadDashboard(month)}
               onRemoveWallet={handleRemoveWallet}
@@ -709,6 +710,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           {data && activeTab === "settings" && (
             <SettingsTab
               user={data.user}
+              exchangeRates={data.exchangeRates}
               monthLabel={monthLabel}
               monthExportHref={exportHref}
               onRefresh={() => loadDashboard(month)}

@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const transactions = await prisma.transaction.findMany({
       where,
       include: {
-        wallet: { select: { name: true } },
+        wallet: { select: { name: true, currency: true } },
         targetWallet: { select: { name: true } },
         category: { select: { name: true } },
       },
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         escapeCsvCell(tx.occurredAt.toISOString()),
         escapeCsvCell(tx.type),
         escapeCsvCell(tx.amount.toString(), { numeric: true }),
-        escapeCsvCell(user.currency),
+        escapeCsvCell(tx.wallet.currency || user.currency),
         escapeCsvCell(tx.wallet.name),
         escapeCsvCell(tx.targetWallet?.name ?? ""),
         escapeCsvCell(tx.category?.name ?? "Transfer"),

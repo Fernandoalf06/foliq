@@ -25,26 +25,15 @@ export async function PATCH(request: NextRequest) {
 
     const { name, currency } = parsed.data;
 
-    const updated = await prisma.$transaction(async (tx) => {
-      const nextUser = await tx.user.update({
-        where: { id: user.id },
-        data: { name, currency },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          currency: true,
-        },
-      });
-
-      if (currency !== user.currency) {
-        await tx.wallet.updateMany({
-          where: { userId: user.id },
-          data: { currency },
-        });
-      }
-
-      return nextUser;
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { name, currency },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        currency: true,
+      },
     });
 
     return NextResponse.json({ user: updated });

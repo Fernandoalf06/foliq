@@ -37,9 +37,10 @@ export function TransactionRow({
       ? `${tx.wallet.name} · ${tx.note}`
       : tx.wallet.name;
 
+  const txCurrency = tx.wallet.currency || currency;
   const amountText = isTransfer
-    ? formatCurrency(tx.amount, currency)
-    : formatCurrency(isIncome ? tx.amount : -tx.amount, currency, {
+    ? formatCurrency(tx.amount, txCurrency)
+    : formatCurrency(isIncome ? tx.amount : -tx.amount, txCurrency, {
         signed: true,
       });
 
@@ -99,14 +100,14 @@ export function TransactionRow({
                 <button
                   type="button"
                   onClick={() => onConfirmDelete?.(tx.id)}
-                  className="min-h-10 rounded-lg bg-[var(--expense)] px-2.5 text-xs font-semibold text-white"
+                  className="min-h-11 rounded-lg bg-[var(--expense)] px-3 text-xs font-semibold text-white"
                 >
                   Delete
                 </button>
                 <button
                   type="button"
                   onClick={() => onCancelDelete?.()}
-                  className="min-h-10 rounded-lg border border-[var(--border)] px-2 text-xs font-medium text-[var(--ink-muted)]"
+                  className="min-h-11 rounded-lg border border-[var(--border)] px-2.5 text-xs font-medium text-[var(--ink-muted)]"
                 >
                   Cancel
                 </button>

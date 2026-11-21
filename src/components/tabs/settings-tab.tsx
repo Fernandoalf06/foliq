@@ -12,11 +12,13 @@ import {
   SunIcon,
 } from "../icons";
 import { useTheme } from "../theme-provider";
+import { ExchangeRatesSection } from "./exchange-rates-section";
 import { ShortcutsSection } from "./shortcuts-section";
-import type { UserProfile } from "@/lib/types";
+import type { ExchangeRateItem, UserProfile } from "@/lib/types";
 
 interface SettingsTabProps {
   user: UserProfile;
+  exchangeRates: ExchangeRateItem[];
   monthLabel: string;
   monthExportHref: string;
   onRefresh: () => Promise<void>;
@@ -25,6 +27,7 @@ interface SettingsTabProps {
 
 export function SettingsTab({
   user,
+  exchangeRates,
   monthLabel,
   monthExportHref,
   onRefresh,
@@ -149,8 +152,8 @@ export function SettingsTab({
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
             Signed in as{" "}
             <span className="font-medium text-[var(--ink)]">{user.email}</span>.
-            Changing primary currency updates display formatting across your
-            wallets.
+            Primary currency controls Net Balance and trend chart conversion
+            while each wallet keeps its own currency.
           </p>
 
           {profileFeedback && (
@@ -326,6 +329,13 @@ export function SettingsTab({
           </form>
         </section>
       </div>
+
+      {/* Multi-Currency Exchange Rates */}
+      <ExchangeRatesSection
+        primaryCurrency={user.currency}
+        rates={exchangeRates}
+        onRefresh={onRefresh}
+      />
 
       {/* Apple Shortcuts & API Tokens */}
       <ShortcutsSection />

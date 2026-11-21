@@ -2,8 +2,15 @@
 
 import React, { useState } from "react";
 import { CashflowChart } from "../cashflow-chart";
-import { CategoryGlyph, PlusIcon, RepeatIcon, TransferIcon } from "../icons";
+import {
+  CategoryGlyph,
+  PlusIcon,
+  RepeatIcon,
+  TargetIcon,
+  TransferIcon,
+} from "../icons";
 import { TransactionRow } from "../transaction-row";
+import { TrendChart } from "../trend-chart";
 import { formatCurrency } from "@/lib/money";
 import type {
   DashboardPayload,
@@ -18,7 +25,7 @@ interface OverviewTabProps {
   onOpenQuickEntry: (type: TransactionType) => void;
   onEditTransaction: (tx: TransactionItem) => void;
   onRecordRecurring: (id: string) => Promise<void>;
-  onNavigateTab: (tab: "ledger" | "budgets") => void;
+  onNavigateTab: (tab: "ledger" | "budgets" | "wallets") => void;
 }
 
 export function OverviewTab({
@@ -198,6 +205,60 @@ export function OverviewTab({
         currency={currency}
         monthLabel={monthLabel}
       />
+
+      {data.monthlyTrend.length > 0 && (
+        <TrendChart data={data.monthlyTrend} currency={currency} />
+      )}
+
+      {data.savingsGoals.length > 0 && (
+        <section className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-[var(--ink)]">
+              <TargetIcon className="h-4 w-4 text-[var(--accent-text)]" />
+              <span>Savings Goals ({data.savingsGoals.length})</span>
+            </h2>
+            <button
+              type="button"
+              onClick={() => onNavigateTab("wallets")}
+              className="min-h-11 px-2 text-xs font-semibold text-[var(--accent-text)] hover:underline"
+            >
+              Manage goals
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {data.savingsGoals.slice(0, 3).map((goal) => (
+              <div
+                key={goal.id}
+                className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-3.5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-semibold text-[var(--ink)]">
+                    {goal.name}
+                  </p>
+                  <span className="tabular-nums shrink-0 text-xs font-semibold text-[var(--accent-text)]">
+                    {goal.percent}%
+                  </span>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--surface-1)]">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.min(100, goal.percent)}%`,
+                      backgroundColor: goal.isCompleted
+                        ? "var(--income)"
+                        : "var(--accent)",
+                    }}
+                  />
+                </div>
+                <p className="tabular-nums mt-2 text-xs text-[var(--ink-muted)]">
+                  {formatCurrency(goal.currentAmount, goal.currency)} /{" "}
+                  {formatCurrency(goal.targetAmount, goal.currency)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         <div className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-5 lg:col-span-7">

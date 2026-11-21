@@ -17,6 +17,8 @@ export interface WalletItem {
   currency: string;
   initialBalance: number;
   balance: number;
+  balanceInPrimary: number;
+  exchangeRate: number;
 }
 
 export interface CategoryItem {
@@ -32,8 +34,8 @@ export interface TransactionItem {
   amount: number;
   note: string;
   occurredAt: string;
-  wallet: { id: string; name: string; type: WalletType };
-  targetWallet: { id: string; name: string; type: WalletType } | null;
+  wallet: { id: string; name: string; type: WalletType; currency: string };
+  targetWallet: { id: string; name: string; type: WalletType; currency: string } | null;
   category: { id: string; name: string; icon: string; type: CategoryType } | null;
 }
 
@@ -86,6 +88,38 @@ export interface ApiTokenItem {
   createdAt: string;
 }
 
+export interface ExchangeRateItem {
+  fromCurrency: string;
+  toCurrency: string;
+  rate: number;
+  isCustom: boolean;
+  updatedAt: string | null;
+}
+
+export interface SavingsGoalItem {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  currency: string;
+  targetDate: string | null;
+  note: string;
+  isCompleted: boolean;
+  remaining: number;
+  percent: number;
+  status: "completed" | "near" | "in_progress";
+  wallet: { id: string; name: string; currency: string } | null;
+}
+
+export interface MonthlyTrendPoint {
+  month: string;
+  label: string;
+  income: number;
+  expense: number;
+  net: number;
+  netWorth: number;
+}
+
 export interface DashboardPayload {
   user: UserProfile;
   month: string;
@@ -102,6 +136,9 @@ export interface DashboardPayload {
   transactions: TransactionItem[];
   budgets: BudgetItem[];
   recurringRules: RecurringRuleItem[];
+  savingsGoals: SavingsGoalItem[];
+  exchangeRates: ExchangeRateItem[];
   categoryBreakdown: CategoryBreakdownItem[];
   dailySeries: DailySeriesPoint[];
+  monthlyTrend: MonthlyTrendPoint[];
 }

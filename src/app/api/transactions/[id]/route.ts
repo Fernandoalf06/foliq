@@ -76,6 +76,14 @@ export async function PATCH(
           { status: 404 },
         );
       }
+      if (destinationWallet.currency !== sourceWallet.currency) {
+        return NextResponse.json(
+          {
+            error: `Transfers require matching currencies (${sourceWallet.currency} to ${destinationWallet.currency} is not supported directly).`,
+          },
+          { status: 400 },
+        );
+      }
     }
 
     if (type !== "TRANSFER" && categoryId) {
@@ -102,8 +110,10 @@ export async function PATCH(
         occurredAt: occurredAt ? new Date(occurredAt) : existing.occurredAt,
       },
       include: {
-        wallet: { select: { id: true, name: true, type: true } },
-        targetWallet: { select: { id: true, name: true, type: true } },
+        wallet: { select: { id: true, name: true, type: true, currency: true } },
+        targetWallet: {
+          select: { id: true, name: true, type: true, currency: true },
+        },
         category: { select: { id: true, name: true, icon: true, type: true } },
       },
     });

@@ -4,6 +4,28 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.0] - 2026-11-21
+
+### Added
+
+- **Multi-Currency Wallets & Saved Exchange Rates (`exchange_rates`):**
+  - Wallets now support individual currencies (`IDR`, `USD`, `SGD`, `EUR`) on both creation and inline editing without overriding other wallets when changing Primary Display Currency.
+  - Added **Multi-Currency Exchange Rates** configuration in Settings (`GET/PUT /api/settings/rates`) backed by Neon PostgreSQL with custom + fallback conversion (`src/lib/currency.ts`).
+  - Total Net Balance, monthly cashflow, category breakdowns, budgets, and trend charts automatically convert foreign-currency wallets into your primary currency, while each wallet card and ledger row preserves its native currency formatting (`≈` converted preview shown for foreign-currency wallets).
+- **Savings Goals & Sinking Funds (`savings_goals`):**
+  - Added full CRUD and quick contribute/withdraw progress tracking (`GET/POST /api/goals`, `PATCH/DELETE /api/goals/[id]`) supporting multi-currency targets, optional deadlines, optional linked wallets, and automatic completion status.
+  - Added a **Savings Goals** sub-view inside **Wallets & Goals** plus a live **Savings Goals** progress strip on Overview.
+- **6-Month & 12-Month Net Worth & Cashflow Trend Charts (`src/components/trend-chart.tsx`):**
+  - Added an interactive multi-month trend chart on Overview with `Net Worth` (reconstructed month-end balance curve) and `Cashflow` (monthly Income vs. Expense bars) modes across `6M` and `12M` windows, fully timezone-aligned and multi-currency aware.
+- **Expanded Unit Tests:** Added `src/lib/currency.test.ts` (direct/inverse/fallback exchange rates, currency conversion, goal progress, trailing month key generation) and expanded `src/lib/validators.test.ts` for goals and exchange rates.
+
+### Changed
+
+- Enforced same-currency transfer validation on `POST /api/transactions`, `PATCH /api/transactions/[id]`, and Quick Entry to prevent silent cross-currency ledger distortion.
+- Updated `GET /api/export` CSV backups and `POST /api/shortcuts/record` responses to report each transaction's native wallet currency instead of forcing primary account currency.
+- Updated `PATCH /api/settings/profile` so changing primary display currency no longer overwrites individual wallet currencies.
+- Upgraded mobile header month-switcher chevrons and inline delete confirmation buttons to `44px` minimum height and bumped Service Worker cache to `foliq-shell-v0-4-0`.
+
 ## [0.3.0] - 2026-11-21
 
 ### Added

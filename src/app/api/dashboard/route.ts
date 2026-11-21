@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import {
+  buildTrailingMonthKeys,
+  computeGoalProgress,
+  convertCurrencyAmount,
+  formatShortMonthLabel,
+  resolveExchangeRate,
+  SUPPORTED_CURRENCIES,
+  type SavedRateRecord,
+} from "@/lib/currency";
+import {
   clampTimezoneOffset,
   computeBudgetProgress,
   computeCashflow,
@@ -34,6 +43,12 @@ export async function GET(request: NextRequest) {
         : formatMonthKey(new Date());
     const { start, end } = getMonthRangeForOffset(month, tzOffset);
 
+    const trendMonthKeys = buildTrailingMonthKeys(month, 12);
+    const { start: trendStart } = getMonthRangeForOffset(
+      trendMonthKeys[0],
+      tzOffset,
+    );
+
     const [
       allWallets,
       categories,
@@ -42,6 +57,9 @@ export async function GET(request: NextRequest) {
       monthTransactions,
       budgets,
       recurringRules,
+      savingsGoals,
+      savedRateRows,
+      trendTransactions,
     ] = await Promise.all([
       prisma.wallet.findMany({
         where: { userId: user.id },
@@ -71,8 +89,10 @@ export async function GET(request: NextRequest) {
           occurredAt: { gte: start, lt: end },
         },
         include: {
-          wallet: { select: { id: true, name: true, type: true } },
-          targetWallet: { select: { id: true, name: true, type: true } },
+          wallet: { select: { id: true, name: true, type: true, currency: true } },
+          targetWallet: {
+            select: { id: true, name: true, type: true, currency: true },
+          },
           category: { select: { id: true, name: true, icon: true, type: true } },
         },
         orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
@@ -92,7 +112,46 @@ export async function GET(request: NextRequest) {
         },
         orderBy: [{ isActive: "desc" }, { nextDueDate: "asc" }],
       }),
+      prisma.savingsGoal.findMany({
+        where: { userId: user.id },
+        include: {
+          wallet: { select: { id: true, name: true, currency: true } },
+        },
+        orderBy: [{ isCompleted: "asc" }, { createdAt: "asc" }],
+      }),
+      prisma.exchangeRate.findMany({
+        where: { userId: user.id },
+      }),
+      prisma.transaction.findMany({
+        where: {
+          userId: user.id,
+          type: { in: ["INCOME", "EXPENSE"] },
+          occurredAt: { gte: trendStart },
+        },
+        select: {
+          type: true,
+          amount: true,
+          occurredAt: true,
+          walletId: true,
+        },
+      }),
     ]);
+
+    const savedRates: SavedRateRecord[] = savedRateRows.map((r) => ({
+      fromCurrency: r.fromCurrency,
+      toCurrency: r.toCurrency,
+      rate: Number(r.rate.toString()),
+    }));
+
+    const walletCurrencyById = new Map<string, string>();
+    const activeWalletIds = new Set<string>();
+    for (const w of allWallets) {
+      walletCurrencyById.set(w.id, w.currency);
+      if (!w.isArchived) activeWalletIds.add(w.id);
+    }
+
+    const toPrimaryAmount = (amountNum: number, walletCurrency: string) =>
+      convertCurrencyAmount(amountNum, walletCurrency, user.currency, savedRates);
 
     // Aggregate exact wallet balances in minor units using PostgreSQL groupBy sums
     const balancesMinor = new Map<string, number>();
@@ -107,7 +166,6 @@ export async function GET(request: NextRequest) {
       if (row.type === "INCOME") {
         balancesMinor.set(row.walletId, current + minor);
       } else {
-        // Both EXPENSE and outgoing TRANSFER reduce source wallet balance
         balancesMinor.set(row.walletId, current - minor);
       }
     }
@@ -120,14 +178,21 @@ export async function GET(request: NextRequest) {
       balancesMinor.set(row.targetWalletId, current + minor);
     }
 
-    const toSerializedWallet = (w: (typeof allWallets)[number]) => ({
-      id: w.id,
-      name: w.name,
-      type: w.type,
-      currency: w.currency,
-      initialBalance: Number(w.initialBalance.toString()),
-      balance: fromMinorUnits(balancesMinor.get(w.id) ?? 0),
-    });
+    const toSerializedWallet = (w: (typeof allWallets)[number]) => {
+      const balance = fromMinorUnits(balancesMinor.get(w.id) ?? 0);
+      const resolved = resolveExchangeRate(w.currency, user.currency, savedRates);
+      const balanceInPrimary = toPrimaryAmount(balance, w.currency);
+      return {
+        id: w.id,
+        name: w.name,
+        type: w.type,
+        currency: w.currency,
+        initialBalance: Number(w.initialBalance.toString()),
+        balance,
+        balanceInPrimary,
+        exchangeRate: Number(resolved.rate.toFixed(6)),
+      };
+    };
 
     const serializedWallets = allWallets
       .filter((w) => !w.isArchived)
@@ -137,25 +202,35 @@ export async function GET(request: NextRequest) {
       .map(toSerializedWallet);
 
     const netWorthMinor = serializedWallets.reduce(
-      (sum, w) => sum + toMinorUnits(w.balance),
+      (sum, w) => sum + toMinorUnits(w.balanceInPrimary),
       0,
     );
 
-    const monthEntries = monthTransactions.map((tx) => ({
-      type: tx.type,
-      amount: tx.amount.toString(),
-      walletId: tx.walletId,
-      targetWalletId: tx.targetWalletId,
-      categoryId: tx.categoryId,
-    }));
+    const monthEntriesInPrimary = monthTransactions.map((tx) => {
+      const converted = toPrimaryAmount(
+        Number(tx.amount.toString()),
+        tx.wallet.currency,
+      );
+      return {
+        type: tx.type,
+        amount: converted,
+        walletId: tx.walletId,
+        targetWalletId: tx.targetWalletId,
+        categoryId: tx.categoryId,
+      };
+    });
 
-    const cashflow = computeCashflow(monthEntries);
+    const cashflow = computeCashflow(monthEntriesInPrimary);
 
     const spendByCategoryMinor = new Map<string, number>();
     const dailyMap = new Map<string, { income: number; expense: number }>();
 
     for (const tx of monthTransactions) {
-      const minor = toMinorUnits(tx.amount.toString());
+      const converted = toPrimaryAmount(
+        Number(tx.amount.toString()),
+        tx.wallet.currency,
+      );
+      const minor = toMinorUnits(converted);
       const dayKey = toLocalDateKey(tx.occurredAt, tzOffset);
       const bucket = dailyMap.get(dayKey) ?? { income: 0, expense: 0 };
 
@@ -181,6 +256,71 @@ export async function GET(request: NextRequest) {
         income: fromMinorUnits(totals.income),
         expense: fromMinorUnits(totals.expense),
       }));
+
+    // Build 12-month cashflow & reconstructed month-end net worth trend
+    const trendBuckets = new Map<
+      string,
+      { income: number; expense: number; activeNet: number }
+    >();
+    for (const key of trendMonthKeys) {
+      trendBuckets.set(key, { income: 0, expense: 0, activeNet: 0 });
+    }
+
+    let postSelectedMonthActiveNetMinor = 0;
+    for (const tx of trendTransactions) {
+      const walletCurr = walletCurrencyById.get(tx.walletId) ?? user.currency;
+      const convertedMinor = toMinorUnits(
+        toPrimaryAmount(Number(tx.amount.toString()), walletCurr),
+      );
+      const signedMinor =
+        tx.type === "INCOME" ? convertedMinor : -convertedMinor;
+
+      if (tx.occurredAt >= end) {
+        if (activeWalletIds.has(tx.walletId)) {
+          postSelectedMonthActiveNetMinor += signedMinor;
+        }
+        continue;
+      }
+
+      const monthKey = toLocalDateKey(tx.occurredAt, tzOffset).slice(0, 7);
+      const bucket = trendBuckets.get(monthKey);
+      if (!bucket) continue;
+
+      if (tx.type === "INCOME") {
+        bucket.income += convertedMinor;
+      } else if (tx.type === "EXPENSE") {
+        bucket.expense += convertedMinor;
+      }
+      if (activeWalletIds.has(tx.walletId)) {
+        bucket.activeNet += signedMinor;
+      }
+    }
+
+    const monthEndNetWorthMinor = new Array<number>(trendMonthKeys.length).fill(0);
+    let runningNetWorth = netWorthMinor - postSelectedMonthActiveNetMinor;
+    for (let i = trendMonthKeys.length - 1; i >= 0; i -= 1) {
+      monthEndNetWorthMinor[i] = runningNetWorth;
+      const bucket = trendBuckets.get(trendMonthKeys[i]);
+      if (bucket) {
+        runningNetWorth -= bucket.activeNet;
+      }
+    }
+
+    const monthlyTrend = trendMonthKeys.map((key, idx) => {
+      const bucket = trendBuckets.get(key) ?? {
+        income: 0,
+        expense: 0,
+        activeNet: 0,
+      };
+      return {
+        month: key,
+        label: formatShortMonthLabel(key),
+        income: fromMinorUnits(bucket.income),
+        expense: fromMinorUnits(bucket.expense),
+        net: fromMinorUnits(bucket.income - bucket.expense),
+        netWorth: fromMinorUnits(monthEndNetWorthMinor[idx]),
+      };
+    });
 
     const categoryBreakdown = categories
       .filter((c) => c.type === "EXPENSE")
@@ -237,6 +377,41 @@ export async function GET(request: NextRequest) {
       category: r.category,
     }));
 
+    const serializedGoals = savingsGoals.map((g) => {
+      const targetAmount = Number(g.targetAmount.toString());
+      const currentAmount = Number(g.currentAmount.toString());
+      return {
+        id: g.id,
+        name: g.name,
+        targetAmount,
+        currentAmount,
+        currency: g.currency,
+        targetDate: g.targetDate ? g.targetDate.toISOString() : null,
+        note: g.note,
+        isCompleted: g.isCompleted,
+        wallet: g.wallet,
+        ...computeGoalProgress(currentAmount, targetAmount),
+      };
+    });
+
+    const exchangeRates = SUPPORTED_CURRENCIES.filter(
+      (c) => c !== user.currency,
+    ).map((fromCurrency) => {
+      const resolved = resolveExchangeRate(fromCurrency, user.currency, savedRates);
+      const exactRow = savedRateRows.find(
+        (r) =>
+          (r.fromCurrency === fromCurrency && r.toCurrency === user.currency) ||
+          (r.fromCurrency === user.currency && r.toCurrency === fromCurrency),
+      );
+      return {
+        fromCurrency,
+        toCurrency: user.currency,
+        rate: Number(resolved.rate.toFixed(6)),
+        isCustom: resolved.isCustom,
+        updatedAt: exactRow ? exactRow.updatedAt.toISOString() : null,
+      };
+    });
+
     return NextResponse.json({
       user,
       month,
@@ -253,8 +428,11 @@ export async function GET(request: NextRequest) {
       transactions: serializedTransactions,
       budgets: serializedBudgets,
       recurringRules: serializedRecurring,
+      savingsGoals: serializedGoals,
+      exchangeRates,
       categoryBreakdown,
       dailySeries,
+      monthlyTrend,
     });
   } catch (error) {
     console.error("Dashboard GET error:", error);

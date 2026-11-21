@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   apiTokenCreateSchema,
+  exchangeRateUpsertSchema,
   passwordChangeSchema,
   profileUpdateSchema,
   recurringRuleCreateSchema,
   recurringRuleUpdateSchema,
+  savingsGoalCreateSchema,
+  savingsGoalUpdateSchema,
   shortcutRecordSchema,
   transactionCreateSchema,
   uuidSchema,
@@ -145,6 +148,44 @@ describe("validation schemas", () => {
     expect(
       shortcutRecordSchema.safeParse({
         amount: 0,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("validates savings goals and exchange rate schemas", () => {
+    expect(
+      savingsGoalCreateSchema.safeParse({
+        name: "Emergency Fund",
+        targetAmount: 25000000,
+        currentAmount: 5000000,
+        currency: "IDR",
+      }).success,
+    ).toBe(true);
+
+    expect(
+      savingsGoalCreateSchema.safeParse({
+        name: "Invalid Goal",
+        targetAmount: 0,
+      }).success,
+    ).toBe(false);
+
+    expect(
+      savingsGoalUpdateSchema.safeParse({ deltaAmount: 1000000 }).success,
+    ).toBe(true);
+
+    expect(
+      exchangeRateUpsertSchema.safeParse({
+        fromCurrency: "USD",
+        toCurrency: "IDR",
+        rate: 16250,
+      }).success,
+    ).toBe(true);
+
+    expect(
+      exchangeRateUpsertSchema.safeParse({
+        fromCurrency: "USD",
+        toCurrency: "USD",
+        rate: 1,
       }).success,
     ).toBe(false);
   });

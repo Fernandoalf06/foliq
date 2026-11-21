@@ -2,12 +2,15 @@
 
 import React, { useState } from "react";
 import { EditIcon, RestoreIcon, TrashIcon } from "../icons";
+import { GoalsSection } from "./goals-section";
+import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatCurrency } from "@/lib/money";
-import type { WalletItem, WalletType } from "@/lib/types";
+import type { SavingsGoalItem, WalletItem, WalletType } from "@/lib/types";
 
 interface WalletsTabProps {
   wallets: WalletItem[];
   archivedWallets: WalletItem[];
+  savingsGoals: SavingsGoalItem[];
   currency: string;
   onRefresh: () => Promise<void>;
   onRemoveWallet: (id: string) => Promise<void>;
@@ -17,13 +20,16 @@ interface WalletsTabProps {
 export function WalletsTab({
   wallets,
   archivedWallets,
+  savingsGoals,
   currency,
   onRefresh,
   onRemoveWallet,
   onRestoreWallet,
 }: WalletsTabProps) {
+  const [subView, setSubView] = useState<"wallets" | "goals">("wallets");
   const [walletName, setWalletName] = useState("");
   const [walletType, setWalletType] = useState<WalletType>("BANK");
+  const [walletCurrency, setWalletCurrency] = useState(currency);
   const [walletInitial, setWalletInitial] = useState("0");
   const [walletSubmitting, setWalletSubmitting] = useState(false);
   const [walletFeedback, setWalletFeedback] = useState<string | null>(null);
@@ -33,6 +39,7 @@ export function WalletsTab({
   const [editingWalletId, setEditingWalletId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState<WalletType>("BANK");
+  const [editCurrency, setEditCurrency] = useState(currency);
   const [editInitial, setEditInitial] = useState("0");
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -43,6 +50,7 @@ export function WalletsTab({
     setEditingWalletId(wallet.id);
     setEditName(wallet.name);
     setEditType(wallet.type);
+    setEditCurrency(wallet.currency);
     setEditInitial(String(wallet.initialBalance));
   };
 
@@ -57,6 +65,7 @@ export function WalletsTab({
         body: JSON.stringify({
           name: editName,
           type: editType,
+          currency: editCurrency,
           initialBalance: Number.parseFloat(editInitial || "0") || 0,
         }),
       });
@@ -86,6 +95,7 @@ export function WalletsTab({
         body: JSON.stringify({
           name: walletName,
           type: walletType,
+          currency: walletCurrency,
           initialBalance: Number.parseFloat(walletInitial || "0") || 0,
         }),
       });
@@ -113,6 +123,48 @@ export function WalletsTab({
 
   return (
     <div className="space-y-5">
+      <div
+        role="tablist"
+        aria-label="Wallets and savings goals view"
+        className="grid max-w-md grid-cols-2 gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-1"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={subView === "wallets"}
+          onClick={() => setSubView("wallets")}
+          className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition-colors ${
+            subView === "wallets"
+              ? "bg-[var(--accent)] text-white"
+              : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+          }`}
+        >
+          Wallets ({wallets.length})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={subView === "goals"}
+          onClick={() => setSubView("goals")}
+          className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition-colors ${
+            subView === "goals"
+              ? "bg-[var(--accent)] text-white"
+              : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+          }`}
+        >
+          Savings Goals ({savingsGoals.length})
+        </button>
+      </div>
+
+      {subView === "goals" ? (
+        <GoalsSection
+          goals={savingsGoals}
+          wallets={wallets}
+          currency={currency}
+          onRefresh={onRefresh}
+        />
+      ) : (
+        <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {wallets.map((w) => {
           const isConfirming = confirmRemoveId === w.id;
@@ -150,25 +202,47 @@ export function WalletsTab({
                     className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--ink)]"
                   />
                 </div>
-                <div>
-                  <label
-                    htmlFor={`edit-wallet-type-${w.id}`}
-                    className="mb-1 block text-xs font-medium text-[var(--ink-muted)]"
-                  >
-                    Account Type
-                  </label>
-                  <select
-                    id={`edit-wallet-type-${w.id}`}
-                    value={editType}
-                    onChange={(e) => setEditType(e.target.value as WalletType)}
-                    className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--ink)]"
-                  >
-                    <option value="BANK">Bank</option>
-                    <option value="EWALLET">E-Wallet</option>
-                    <option value="CASH">Cash</option>
-                    <option value="SAVINGS">Savings</option>
-                    <option value="CREDIT">Credit</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label
+                      htmlFor={`edit-wallet-type-${w.id}`}
+                      className="mb-1 block text-xs font-medium text-[var(--ink-muted)]"
+                    >
+                      Account Type
+                    </label>
+                    <select
+                      id={`edit-wallet-type-${w.id}`}
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value as WalletType)}
+                      className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--ink)]"
+                    >
+                      <option value="BANK">Bank</option>
+                      <option value="EWALLET">E-Wallet</option>
+                      <option value="CASH">Cash</option>
+                      <option value="SAVINGS">Savings</option>
+                      <option value="CREDIT">Credit</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor={`edit-wallet-currency-${w.id}`}
+                      className="mb-1 block text-xs font-medium text-[var(--ink-muted)]"
+                    >
+                      Currency
+                    </label>
+                    <select
+                      id={`edit-wallet-currency-${w.id}`}
+                      value={editCurrency}
+                      onChange={(e) => setEditCurrency(e.target.value)}
+                      className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--ink)]"
+                    >
+                      {SUPPORTED_CURRENCIES.map((code) => (
+                        <option key={code} value={code}>
+                          {code}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <div className="mb-1 flex items-baseline justify-between gap-2">
@@ -176,14 +250,14 @@ export function WalletsTab({
                       htmlFor={`edit-wallet-initial-${w.id}`}
                       className="block text-xs font-medium text-[var(--ink-muted)]"
                     >
-                      Opening Balance ({w.currency})
+                      Opening Balance ({editCurrency})
                     </label>
                     {editInitial.trim() !== "" &&
                       Number.isFinite(Number.parseFloat(editInitial)) && (
                         <span className="tabular-nums text-xs font-semibold text-[var(--accent-text)]">
                           {formatCurrency(
                             Number.parseFloat(editInitial),
-                            w.currency,
+                            editCurrency,
                           )}
                         </span>
                       )}
@@ -225,23 +299,28 @@ export function WalletsTab({
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-lg bg-[var(--surface-2)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-muted)]">
-                    {w.type}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="rounded-lg bg-[var(--surface-2)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-muted)]">
+                      {w.type}
+                    </span>
+                    <span className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs font-semibold text-[var(--ink-muted)]">
+                      {w.currency}
+                    </span>
+                  </div>
 
                   {isConfirming ? (
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => void handleConfirmRemove(w.id)}
-                        className="min-h-10 rounded-lg bg-[var(--expense)] px-2.5 text-xs font-semibold text-white"
+                        className="min-h-11 rounded-lg bg-[var(--expense)] px-3 text-xs font-semibold text-white"
                       >
                         Remove
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmRemoveId(null)}
-                        className="min-h-10 rounded-lg border border-[var(--border)] px-2 text-xs font-medium text-[var(--ink-muted)]"
+                        className="min-h-11 rounded-lg border border-[var(--border)] px-2.5 text-xs font-medium text-[var(--ink-muted)]"
                       >
                         Cancel
                       </button>
@@ -275,6 +354,11 @@ export function WalletsTab({
                 <p className="tabular-nums mt-1.5 break-words text-2xl font-bold text-[var(--ink)]">
                   {formatCurrency(w.balance, w.currency)}
                 </p>
+                {w.currency !== currency && (
+                  <p className="tabular-nums mt-1 text-xs font-medium text-[var(--accent-text)]">
+                    ≈ {formatCurrency(w.balanceInPrimary, currency)}
+                  </p>
+                )}
               </div>
               <p className="tabular-nums mt-4 text-xs text-[var(--ink-muted)]">
                 Opening balance: {formatCurrency(w.initialBalance, w.currency)}
@@ -304,7 +388,7 @@ export function WalletsTab({
           onSubmit={handleAddWallet}
           className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-12"
         >
-          <div className="sm:col-span-4">
+          <div className="sm:col-span-3">
             <label
               htmlFor="wallet-name"
               className="mb-1.5 block text-sm font-medium text-[var(--ink)]"
@@ -316,19 +400,19 @@ export function WalletsTab({
               type="text"
               required
               maxLength={40}
-              placeholder="BCA Savings, GoPay, Cash"
+              placeholder="BCA Savings, USD Wise"
               value={walletName}
               onChange={(e) => setWalletName(e.target.value)}
               className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)]"
             />
           </div>
 
-          <div className="sm:col-span-3">
+          <div className="sm:col-span-2">
             <label
               htmlFor="wallet-type"
               className="mb-1.5 block text-sm font-medium text-[var(--ink)]"
             >
-              Account Type
+              Type
             </label>
             <select
               id="wallet-type"
@@ -344,13 +428,34 @@ export function WalletsTab({
             </select>
           </div>
 
+          <div className="sm:col-span-2">
+            <label
+              htmlFor="wallet-currency"
+              className="mb-1.5 block text-sm font-medium text-[var(--ink)]"
+            >
+              Currency
+            </label>
+            <select
+              id="wallet-currency"
+              value={walletCurrency}
+              onChange={(e) => setWalletCurrency(e.target.value)}
+              className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--ink)]"
+            >
+              {SUPPORTED_CURRENCIES.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="sm:col-span-3">
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
               <label
                 htmlFor="wallet-initial"
                 className="block text-sm font-medium text-[var(--ink)]"
               >
-                Opening Balance ({currency})
+                Opening ({walletCurrency})
               </label>
               {walletInitial.trim() !== "" &&
                 Number.isFinite(Number.parseFloat(walletInitial)) &&
@@ -358,7 +463,7 @@ export function WalletsTab({
                   <span className="tabular-nums text-xs font-semibold text-[var(--accent-text)]">
                     {formatCurrency(
                       Number.parseFloat(walletInitial),
-                      currency,
+                      walletCurrency,
                     )}
                   </span>
                 )}
@@ -426,6 +531,8 @@ export function WalletsTab({
             ))}
           </ul>
         </section>
+      )}
+        </>
       )}
     </div>
   );

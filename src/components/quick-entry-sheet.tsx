@@ -90,9 +90,11 @@ function QuickEntryDialog({
       id: editingTransaction.wallet.id,
       name: `${editingTransaction.wallet.name} (Archived)`,
       type: editingTransaction.wallet.type,
-      currency,
+      currency: editingTransaction.wallet.currency || currency,
       initialBalance: 0,
       balance: 0,
+      balanceInPrimary: 0,
+      exchangeRate: 1,
     });
   }
   if (
@@ -103,11 +105,19 @@ function QuickEntryDialog({
       id: editingTransaction.targetWallet.id,
       name: `${editingTransaction.targetWallet.name} (Archived)`,
       type: editingTransaction.targetWallet.type,
-      currency,
+      currency: editingTransaction.targetWallet.currency || currency,
       initialBalance: 0,
       balance: 0,
+      balanceInPrimary: 0,
+      exchangeRate: 1,
     });
   }
+
+  const activeSourceWallet = selectableWallets.find((w) => w.id === walletId);
+  const activeTargetWallet = selectableWallets.find(
+    (w) => w.id === targetWalletId,
+  );
+  const entryCurrency = activeSourceWallet?.currency ?? currency;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -124,7 +134,7 @@ function QuickEntryDialog({
   }, [onClose]);
 
   const presets =
-    currency === "IDR"
+    entryCurrency === "IDR"
       ? [
           { label: "+15k", value: 15000 },
           { label: "+50k", value: 50000 },
@@ -158,6 +168,18 @@ function QuickEntryDialog({
       (!targetWalletId || targetWalletId === walletId)
     ) {
       setError("Choose two different wallets for a transfer.");
+      return;
+    }
+
+    if (
+      type === "TRANSFER" &&
+      activeSourceWallet &&
+      activeTargetWallet &&
+      activeSourceWallet.currency !== activeTargetWallet.currency
+    ) {
+      setError(
+        `Transfers require matching currencies (${activeSourceWallet.currency} to ${activeTargetWallet.currency} cannot be transferred directly).`,
+      );
       return;
     }
 
@@ -307,7 +329,7 @@ function QuickEntryDialog({
                 htmlFor="entry-amount"
                 className="block text-sm font-medium text-[var(--ink-muted)]"
               >
-                Amount ({currency})
+                Amount ({entryCurrency})
               </label>
               {amount.trim() !== "" &&
                 Number.isFinite(numericAmount) &&
@@ -316,7 +338,7 @@ function QuickEntryDialog({
                     aria-live="polite"
                     className="tabular-nums text-xs font-semibold text-[var(--accent-text)]"
                   >
-                    {formatCurrency(numericAmount, currency)}
+                    {formatCurrency(numericAmount, entryCurrency)}
                   </span>
                 )}
             </div>
@@ -373,7 +395,7 @@ function QuickEntryDialog({
               >
                 {selectableWallets.map((w) => (
                   <option key={w.id} value={w.id}>
-                    {w.name} ({w.type})
+                    {w.name} ({w.currency})
                   </option>
                 ))}
               </select>

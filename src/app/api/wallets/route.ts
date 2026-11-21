@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         name: parsed.data.name,
         type: parsed.data.type,
         initialBalance: parsed.data.initialBalance,
-        currency: user.currency,
+        currency: parsed.data.currency ?? user.currency,
       },
     });
 
