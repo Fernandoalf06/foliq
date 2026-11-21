@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { escapeCsvCell } from "@/lib/money";
+import {
+  clampTimezoneOffset,
+  escapeCsvCell,
+  getMonthRangeForOffset,
+} from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
@@ -11,17 +15,21 @@ export async function GET(request: NextRequest) {
     }
 
     const month = request.nextUrl.searchParams.get("month");
+    const rawTzOffset = request.nextUrl.searchParams.get("tzOffset");
+    const parsedTz =
+      rawTzOffset !== null ? Number.parseInt(rawTzOffset, 10) : 0;
+    const tzOffset = clampTimezoneOffset(
+      Number.isFinite(parsedTz) ? parsedTz : 0,
+    );
+
     const where: {
       userId: string;
       occurredAt?: { gte: Date; lt: Date };
     } = { userId: user.id };
 
     if (month && /^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
-      const [y, m] = month.split("-").map(Number);
-      where.occurredAt = {
-        gte: new Date(Date.UTC(y, m - 1, 1)),
-        lt: new Date(Date.UTC(y, m, 1)),
-      };
+      const { start, end } = getMonthRangeForOffset(month, tzOffset);
+      where.occurredAt = { gte: start, lt: end };
     }
 
     const transactions = await prisma.transaction.findMany({
@@ -49,7 +57,7 @@ export async function GET(request: NextRequest) {
       [
         escapeCsvCell(tx.occurredAt.toISOString()),
         escapeCsvCell(tx.type),
-        escapeCsvCell(tx.amount.toString()),
+        escapeCsvCell(tx.amount.toString(), { numeric: true }),
         escapeCsvCell(user.currency),
         escapeCsvCell(tx.wallet.name),
         escapeCsvCell(tx.targetWallet?.name ?? ""),
@@ -59,7 +67,11 @@ export async function GET(request: NextRequest) {
     );
 
     const csv = [header, ...rows].join("\r\n");
-    const filename = month ? `foliq-${month}.csv` : "foliq-all-transactions.csv";
+    const safeMonth =
+      month && /^\d{4}-(0[1-9]|1[0-2])$/.test(month) ? month : null;
+    const filename = safeMonth
+      ? `foliq-${safeMonth}.csv`
+      : "foliq-all-transactions.csv";
 
     return new NextResponse(csv, {
       status: 200,

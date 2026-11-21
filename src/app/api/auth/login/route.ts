@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  checkAuthRateLimit,
-  clearAuthRateLimit,
+  checkPersistentAuthRateLimit,
+  clearPersistentAuthRateLimit,
+  consumeDummyPasswordVerify,
   createSession,
   isOwnerEmailAllowed,
   verifyPassword,
 } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertSameOrigin, getClientIp } from "@/lib/security";
 import { loginSchema } from "@/lib/validators";
 
 export async function POST(request: NextRequest) {
   try {
-    const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-    const rate = checkAuthRateLimit(`login:${ip}`);
+    const originError = assertSameOrigin(request);
+    if (originError) return originError;
+
+    const ip = getClientIp(request);
+    const rate = await checkPersistentAuthRateLimit(`login:${ip}`);
     if (!rate.allowed) {
       return NextResponse.json(
         {
@@ -35,6 +39,7 @@ export async function POST(request: NextRequest) {
     const { email, password } = parsed.data;
 
     if (!isOwnerEmailAllowed(email)) {
+      consumeDummyPasswordVerify(password);
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 },
@@ -52,7 +57,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!user || !verifyPassword(password, user.passwordHash)) {
+    if (!user) {
+      consumeDummyPasswordVerify(password);
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 },
+      );
+    }
+
+    if (!verifyPassword(password, user.passwordHash)) {
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 },
@@ -60,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     await createSession(user.id, request.headers.get("user-agent"));
-    clearAuthRateLimit(`login:${ip}`);
+    await clearPersistentAuthRateLimit(`login:${ip}`);
 
     return NextResponse.json({
       user: {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  checkAuthRateLimit,
-  clearAuthRateLimit,
+  checkPersistentAuthRateLimit,
+  clearPersistentAuthRateLimit,
   createSession,
   getAllowedOwnerEmail,
   hashPassword,
@@ -9,13 +9,16 @@ import {
 } from "@/lib/auth";
 import { DEFAULT_CATEGORIES, DEFAULT_WALLETS } from "@/lib/defaults";
 import { prisma } from "@/lib/prisma";
+import { assertSameOrigin, getClientIp } from "@/lib/security";
 import { registerSchema } from "@/lib/validators";
 
 export async function POST(request: NextRequest) {
   try {
-    const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
-    const rate = checkAuthRateLimit(`register:${ip}`);
+    const originError = assertSameOrigin(request);
+    if (originError) return originError;
+
+    const ip = getClientIp(request);
+    const rate = await checkPersistentAuthRateLimit(`register:${ip}`);
     if (!rate.allowed) {
       return NextResponse.json(
         {
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest) {
     });
 
     await createSession(user.id, request.headers.get("user-agent"));
-    clearAuthRateLimit(`register:${ip}`);
+    await clearPersistentAuthRateLimit(`register:${ip}`);
 
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {

@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import {
+  clampTimezoneOffset,
   computeBudgetProgress,
   computeCashflow,
-  computeWalletBalances,
   formatMonthKey,
   fromMinorUnits,
+  getMonthRangeForOffset,
+  toLocalDateKey,
   toMinorUnits,
 } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
-
-function getMonthRange(monthKey: string): { start: Date; end: Date } {
-  const [yearStr, monthStr] = monthKey.split("-");
-  const year = Number.parseInt(yearStr, 10);
-  const monthIdx = Number.parseInt(monthStr, 10) - 1;
-  const start = new Date(Date.UTC(year, monthIdx, 1, 0, 0, 0));
-  const end = new Date(Date.UTC(year, monthIdx + 1, 1, 0, 0, 0));
-  return { start, end };
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,64 +20,95 @@ export async function GET(request: NextRequest) {
     }
 
     const rawMonth = request.nextUrl.searchParams.get("month");
+    const rawTzOffset = request.nextUrl.searchParams.get("tzOffset");
+    const parsedTz =
+      rawTzOffset !== null ? Number.parseInt(rawTzOffset, 10) : 0;
+    const tzOffset = clampTimezoneOffset(
+      Number.isFinite(parsedTz) ? parsedTz : 0,
+    );
+
     const month =
       rawMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(rawMonth)
         ? rawMonth
         : formatMonthKey(new Date());
-    const { start, end } = getMonthRange(month);
+    const { start, end } = getMonthRangeForOffset(month, tzOffset);
 
-    const [wallets, categories, allLedgerRows, monthTransactions, budgets] =
-      await Promise.all([
-        prisma.wallet.findMany({
-          where: { userId: user.id, isArchived: false },
-          orderBy: { createdAt: "asc" },
-        }),
-        prisma.category.findMany({
-          where: { userId: user.id },
-          orderBy: [{ type: "asc" }, { name: "asc" }],
-        }),
-        prisma.transaction.findMany({
-          where: { userId: user.id },
-          select: {
-            type: true,
-            amount: true,
-            walletId: true,
-            targetWalletId: true,
-          },
-        }),
-        prisma.transaction.findMany({
-          where: {
-            userId: user.id,
-            occurredAt: { gte: start, lt: end },
-          },
-          include: {
-            wallet: { select: { id: true, name: true, type: true } },
-            targetWallet: { select: { id: true, name: true, type: true } },
-            category: { select: { id: true, name: true, icon: true, type: true } },
-          },
-          orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
-        }),
-        prisma.budget.findMany({
-          where: { userId: user.id, month },
-          include: {
-            category: { select: { id: true, name: true, icon: true } },
-          },
-          orderBy: { createdAt: "asc" },
-        }),
-      ]);
+    const [
+      wallets,
+      categories,
+      sourceSums,
+      incomingTransferSums,
+      monthTransactions,
+      budgets,
+    ] = await Promise.all([
+      prisma.wallet.findMany({
+        where: { userId: user.id, isArchived: false },
+        orderBy: { createdAt: "asc" },
+      }),
+      prisma.category.findMany({
+        where: { userId: user.id },
+        orderBy: [{ type: "asc" }, { name: "asc" }],
+      }),
+      prisma.transaction.groupBy({
+        by: ["walletId", "type"],
+        where: { userId: user.id },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.groupBy({
+        by: ["targetWalletId"],
+        where: {
+          userId: user.id,
+          type: "TRANSFER",
+          targetWalletId: { not: null },
+        },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.findMany({
+        where: {
+          userId: user.id,
+          occurredAt: { gte: start, lt: end },
+        },
+        include: {
+          wallet: { select: { id: true, name: true, type: true } },
+          targetWallet: { select: { id: true, name: true, type: true } },
+          category: { select: { id: true, name: true, icon: true, type: true } },
+        },
+        orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
+      }),
+      prisma.budget.findMany({
+        where: { userId: user.id, month },
+        include: {
+          category: { select: { id: true, name: true, icon: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+    ]);
 
-    const walletBalances = computeWalletBalances(
-      wallets.map((w) => ({
-        id: w.id,
-        initialBalance: w.initialBalance.toString(),
-      })),
-      allLedgerRows.map((tx) => ({
-        type: tx.type,
-        amount: tx.amount.toString(),
-        walletId: tx.walletId,
-        targetWalletId: tx.targetWalletId,
-      })),
-    );
+    // Aggregate exact wallet balances in minor units using PostgreSQL groupBy sums
+    const balancesMinor = new Map<string, number>();
+    for (const w of wallets) {
+      balancesMinor.set(w.id, toMinorUnits(w.initialBalance.toString()));
+    }
+
+    for (const row of sourceSums) {
+      const current = balancesMinor.get(row.walletId);
+      if (current === undefined || !row._sum.amount) continue;
+      const minor = toMinorUnits(row._sum.amount.toString());
+      if (row.type === "INCOME") {
+        balancesMinor.set(row.walletId, current + minor);
+      } else {
+        // Both EXPENSE and outgoing TRANSFER reduce source wallet balance
+        balancesMinor.set(row.walletId, current - minor);
+      }
+    }
+
+    for (const row of incomingTransferSums) {
+      if (!row.targetWalletId || !row._sum.amount) continue;
+      const current = balancesMinor.get(row.targetWalletId);
+      if (current === undefined) continue;
+      const minor = toMinorUnits(row._sum.amount.toString());
+      balancesMinor.set(row.targetWalletId, current + minor);
+    }
 
     const serializedWallets = wallets.map((w) => ({
       id: w.id,
@@ -92,7 +116,7 @@ export async function GET(request: NextRequest) {
       type: w.type,
       currency: w.currency,
       initialBalance: Number(w.initialBalance.toString()),
-      balance: walletBalances.get(w.id) ?? 0,
+      balance: fromMinorUnits(balancesMinor.get(w.id) ?? 0),
     }));
 
     const netWorthMinor = serializedWallets.reduce(
@@ -110,13 +134,12 @@ export async function GET(request: NextRequest) {
 
     const cashflow = computeCashflow(monthEntries);
 
-    // Spend per category for the month (for budgets and top spending breakdown)
     const spendByCategoryMinor = new Map<string, number>();
     const dailyMap = new Map<string, { income: number; expense: number }>();
 
     for (const tx of monthTransactions) {
       const minor = toMinorUnits(tx.amount.toString());
-      const dayKey = tx.occurredAt.toISOString().slice(0, 10);
+      const dayKey = toLocalDateKey(tx.occurredAt, tzOffset);
       const bucket = dailyMap.get(dayKey) ?? { income: 0, expense: 0 };
 
       if (tx.type === "EXPENSE") {

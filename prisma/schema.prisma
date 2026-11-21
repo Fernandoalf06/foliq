@@ -137,3 +137,13 @@ model Budget {
   @@index([userId, month])
   @@map("budgets")
 }
+
+model AuthRateLimit {
+  key         String   @id
+  attempts    Int      @default(0)
+  windowStart DateTime @map("window_start") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([windowStart])
+  @@map("auth_rate_limits")
+}

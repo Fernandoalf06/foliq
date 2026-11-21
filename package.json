@@ -1,6 +1,6 @@
 {
   "name": "foliq",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Foliq: Personal Finance Tracker PWA built with Next.js App Router, Neon PostgreSQL, Prisma ORM, and Tailwind CSS.",
   "private": true,
   "scripts": {

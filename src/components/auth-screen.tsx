@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { FoliqMark, LockIcon, MoonIcon, SunIcon } from "./icons";
+import {
+  EyeIcon,
+  EyeOffIcon,
+  FoliqMark,
+  LockIcon,
+  MoonIcon,
+  SunIcon,
+} from "./icons";
 import { useTheme } from "./theme-provider";
 
 interface AuthScreenProps {
@@ -22,6 +29,7 @@ export function AuthScreen({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [currency, setCurrency] = useState<"IDR" | "USD" | "SGD" | "EUR">(
     "IDR",
   );
@@ -171,23 +179,38 @@ export function AuthScreen({
               >
                 Password
               </label>
-              <input
-                id="auth-password"
-                type="password"
-                required
-                minLength={mode === "register" ? 8 : 1}
-                autoComplete={
-                  mode === "register" ? "new-password" : "current-password"
-                }
-                placeholder={
-                  mode === "register"
-                    ? "At least 8 characters"
-                    : "Enter your password"
-                }
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 text-base text-[var(--ink)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent)]"
-              />
+              <div className="relative">
+                <input
+                  id="auth-password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  minLength={mode === "register" ? 8 : 1}
+                  autoComplete={
+                    mode === "register" ? "new-password" : "current-password"
+                  }
+                  placeholder={
+                    mode === "register"
+                      ? "At least 8 characters"
+                      : "Enter your password"
+                  }
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] pl-3.5 pr-12 text-base text-[var(--ink)] placeholder:text-[var(--ink-muted)] focus:border-[var(--accent)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  className="absolute right-0.5 top-0.5 inline-flex h-11 w-11 items-center justify-center rounded-xl text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {mode === "register" && (
@@ -230,6 +253,13 @@ export function AuthScreen({
                   : "Sign In"}
             </button>
           </form>
+
+          {hasOwnerAccount && mode === "login" && (
+            <p className="mt-4 text-center text-xs leading-relaxed text-[var(--ink-muted)]">
+              Locked out? Reset your owner password from your local repository
+              using Prisma and Neon CLI.
+            </p>
+          )}
 
           {!hasOwnerAccount && (
             <div className="mt-5 border-t border-[var(--border)] pt-4 text-center">

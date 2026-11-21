@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampTimezoneOffset,
   computeBudgetProgress,
   computeCashflow,
   computeWalletBalances,
   escapeCsvCell,
   formatCurrency,
+  getMonthRangeForOffset,
+  toLocalDateKey,
   toMinorUnits,
 } from "./money";
 
@@ -39,7 +42,6 @@ describe("money utilities", () => {
     expect(balances.get("ewallet")).toBe(705000);
     expect(balances.get("cash")).toBe(25000);
 
-    // Net worth should equal initial total + income - expenses (transfers are neutral)
     const netWorth =
       (balances.get("bank") ?? 0) +
       (balances.get("ewallet") ?? 0) +
@@ -83,10 +85,31 @@ describe("money utilities", () => {
     });
   });
 
-  it("formats signed currency strings and escapes CSV values safely", () => {
+  it("computes local timezone month ranges and date keys accurately for WIB (UTC+7)", () => {
+    // Asia/Jakarta (UTC+7) -> JS getTimezoneOffset() is -420
+    const { start, end } = getMonthRangeForOffset("2026-11", -420);
+    expect(start.toISOString()).toBe("2026-10-31T17:00:00.000Z");
+    expect(end.toISOString()).toBe("2026-11-30T17:00:00.000Z");
+
+    // 2026-11-01 02:30 WIB is 2026-10-31T19:30:00Z
+    const earlyMorningWib = new Date("2026-10-31T19:30:00.000Z");
+    expect(earlyMorningWib >= start && earlyMorningWib < end).toBe(true);
+    expect(toLocalDateKey(earlyMorningWib, -420)).toBe("2026-11-01");
+
+    // Extreme offsets are clamped safely
+    expect(clampTimezoneOffset(99999)).toBe(840);
+    expect(clampTimezoneOffset(-99999)).toBe(-840);
+  });
+
+  it("neutralizes CSV formula injection while preserving numeric columns", () => {
     expect(formatCurrency(50000, "IDR", { signed: true })).toContain("+");
     expect(formatCurrency(-50000, "IDR")).toContain("-");
     expect(escapeCsvCell('Coffee, "iced"')).toBe('"Coffee, ""iced"""');
+    expect(escapeCsvCell("=SUM(A1:A5)")).toBe("'=SUM(A1:A5)");
+    expect(escapeCsvCell("+bonus")).toBe("'+bonus");
+    expect(escapeCsvCell("-10+20")).toBe("'-10+20");
+    expect(escapeCsvCell("@account")).toBe("'@account");
+    expect(escapeCsvCell("-50000", { numeric: true })).toBe("-50000");
     expect(escapeCsvCell("Normal note")).toBe("Normal note");
   });
 });

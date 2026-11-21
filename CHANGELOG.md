@@ -4,6 +4,28 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.1] - 2026-11-21
+
+### Security
+
+- **Serverless-Safe Persistent Rate Limiting:** Migrated login and registration rate limits from process memory to a dedicated `auth_rate_limits` table in Neon PostgreSQL so brute-force protection holds across Vercel serverless instances and cold starts.
+- **CSV Formula Injection Protection:** Neutralized spreadsheet formula prefixes (`=`, `+`, `-`, `@`, tab, CR) on text fields in CSV exports while keeping numeric amount columns intact.
+- **Defense-in-Depth CSRF & CSP Headers:** Added same-origin verification (`assertSameOrigin`) on all mutating `POST`/`PATCH`/`DELETE` API endpoints and configured a `Content-Security-Policy` header in `next.config.ts`.
+- **Constant-Time Auth & Session Hygiene:** Added dummy `scrypt` verification on non-owner or missing-user login attempts to reduce timing side channels and automatically prune expired user sessions on sign-in.
+
+### Fixed
+
+- **Local Timezone Accuracy (WIB / UTC+7 & Global Offsets):** Dashboard month boundaries, daily cashflow bar chart bucketing, CSV monthly exports, and Ledger date grouping now respect the user's local timezone offset instead of UTC, fixing transactions recorded between 00:00 and 06:59 WIB shifting to the previous day or month.
+- **Strict UUID Validation:** Validated wallet, transaction, and budget IDs as UUIDs before querying PostgreSQL so invalid IDs return `400 Bad Request` instead of `500 Internal Server Error`.
+- **Service Worker Cache Safety:** Removed dynamic authenticated `/` HTML from Service Worker precaching and added a self-contained offline fallback page so stale auth state is never served offline.
+- **Action Error Visibility:** Failed delete/remove actions on transactions, wallets, and budgets now display a dismissible error alert instead of failing silently.
+
+### Changed
+
+- **PostgreSQL GroupBy Wallet Aggregation:** Replaced full-ledger memory loading in `/api/dashboard` with indexed PostgreSQL `groupBy` sums for faster wallet balance computation.
+- **Quick Entry & Auth UX Polish:** Added live formatted currency preview while typing amounts (preventing zero-count typos in IDR), two-step delete confirmations on Wallets and Budgets, an accessible Show/Hide Password toggle and owner recovery note on the Sign In screen, and a `192x192` `"any"` PWA manifest icon (`/icon-192`).
+- **Modular Component Architecture:** Decomposed `src/components/foliq-app.tsx` into focused tab modules (`overview-tab`, `ledger-tab`, `wallets-tab`, `budgets-tab`, `transaction-row`).
+
 ## [0.1.0] - 2026-11-21
 
 ### Added

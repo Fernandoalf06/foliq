@@ -179,6 +179,26 @@ export function LockIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+export function EyeIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <path d="M2.5 12s3.6-6.5 9.5-6.5S21.5 12 21.5 12s-3.6 6.5-9.5 6.5S2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="2.7" />
+    </svg>
+  );
+}
+
+export function EyeOffIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <path d="M3 3l18 18" />
+      <path d="M10.6 10.6a2.7 2.7 0 0 0 3.8 3.8" />
+      <path d="M9.9 5.7A9.4 9.4 0 0 1 12 5.5c5.9 0 9.5 6.5 9.5 6.5a16.8 16.8 0 0 1-3.3 4.2" />
+      <path d="M6.4 7.7A16.5 16.5 0 0 0 2.5 12s3.6 6.5 9.5 6.5a9.4 9.4 0 0 0 3.4-.6" />
+    </svg>
+  );
+}
+
 export function CategoryGlyph({
   icon,
   className = "h-4 w-4",

@@ -11,6 +11,47 @@ export interface WalletSeed {
   initialBalance: number | string;
 }
 
+const MAX_TZ_OFFSET_MINUTES = 840; // UTC-14 to UTC+14
+
+/**
+ * Clamp JavaScript getTimezoneOffset() value (minutes UTC is ahead of local).
+ * For example, Asia/Jakarta (UTC+7) is -420.
+ */
+export function clampTimezoneOffset(offsetMinutes: number | null | undefined): number {
+  if (typeof offsetMinutes !== "number" || !Number.isFinite(offsetMinutes)) {
+    return 0;
+  }
+  const rounded = Math.trunc(offsetMinutes);
+  return Math.max(-MAX_TZ_OFFSET_MINUTES, Math.min(MAX_TZ_OFFSET_MINUTES, rounded));
+}
+
+/**
+ * Compute exact UTC timestamp bounds [start, end) corresponding to a calendar month
+ * in the user's local timezone offset.
+ */
+export function getMonthRangeForOffset(
+  monthKey: string,
+  tzOffsetMinutes: number = 0,
+): { start: Date; end: Date } {
+  const offset = clampTimezoneOffset(tzOffsetMinutes);
+  const [yearStr, monthStr] = monthKey.split("-");
+  const year = Number.parseInt(yearStr, 10);
+  const monthIdx = Number.parseInt(monthStr, 10) - 1;
+  const offsetMs = offset * 60 * 1000;
+  const start = new Date(Date.UTC(year, monthIdx, 1, 0, 0, 0) + offsetMs);
+  const end = new Date(Date.UTC(year, monthIdx + 1, 1, 0, 0, 0) + offsetMs);
+  return { start, end };
+}
+
+/**
+ * Format a UTC Date into the user's local YYYY-MM-DD key using tzOffsetMinutes.
+ */
+export function toLocalDateKey(date: Date, tzOffsetMinutes: number = 0): string {
+  const offset = clampTimezoneOffset(tzOffsetMinutes);
+  const shifted = new Date(date.getTime() - offset * 60 * 1000);
+  return shifted.toISOString().slice(0, 10);
+}
+
 /**
  * Convert numeric or decimal string into exact integer minor units (cents).
  * Avoids IEEE-754 floating-point drift during balance and cashflow sums.
@@ -37,7 +78,7 @@ export function fromMinorUnits(minor: number): number {
 }
 
 /**
- * Compute exact current balance for every wallet from initial balance + all ledger entries.
+ * Compute exact current balance for every wallet from initial balance + ledger entries.
  * Transfers subtract from source wallet and add to target wallet without affecting net worth.
  */
 export function computeWalletBalances(
@@ -164,8 +205,18 @@ export function formatMonthKey(date: Date = new Date()): string {
   return `${y}-${m}`;
 }
 
-export function escapeCsvCell(value: string | number | null | undefined): string {
-  const str = String(value ?? "");
+/**
+ * Format a CSV cell safely per RFC 4180 while neutralizing spreadsheet formula injection
+ * (=, +, -, @, tab, CR) on text fields when opened in Excel or Apple Numbers.
+ */
+export function escapeCsvCell(
+  value: string | number | null | undefined,
+  options?: { numeric?: boolean },
+): string {
+  let str = String(value ?? "");
+  if (!options?.numeric && /^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
   if (/[",\r\n]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
   }

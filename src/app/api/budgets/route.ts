@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { budgetUpsertSchema } from "@/lib/validators";
+import { assertSameOrigin } from "@/lib/security";
+import { budgetUpsertSchema, uuidSchema } from "@/lib/validators";
 
 export async function POST(request: NextRequest) {
   try {
+    const originError = assertSameOrigin(request);
+    if (originError) return originError;
+
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -69,13 +73,16 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const originError = assertSameOrigin(request);
+    if (originError) return originError;
+
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const id = request.nextUrl.searchParams.get("id");
-    if (!id) {
-      return NextResponse.json({ error: "Missing budget id" }, { status: 400 });
+    if (!id || !uuidSchema.safeParse(id).success) {
+      return NextResponse.json({ error: "Invalid budget ID" }, { status: 400 });
     }
     const existing = await prisma.budget.findFirst({
       where: { id, userId: user.id },

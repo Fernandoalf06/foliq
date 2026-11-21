@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { CategoryGlyph, CloseIcon, TransferIcon } from "./icons";
+import { formatCurrency } from "@/lib/money";
 import type { CategoryItem, TransactionType, WalletItem } from "@/lib/types";
 
 interface QuickEntrySheetProps {
@@ -214,12 +215,24 @@ function QuickEntryDialog({
           )}
 
           <div>
-            <label
-              htmlFor="entry-amount"
-              className="mb-1.5 block text-sm font-medium text-[var(--ink-muted)]"
-            >
-              Amount ({currency})
-            </label>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <label
+                htmlFor="entry-amount"
+                className="block text-sm font-medium text-[var(--ink-muted)]"
+              >
+                Amount ({currency})
+              </label>
+              {amount.trim() !== "" &&
+                Number.isFinite(Number.parseFloat(amount)) &&
+                Number.parseFloat(amount) > 0 && (
+                  <span
+                    aria-live="polite"
+                    className="tabular-nums text-xs font-semibold text-[var(--accent-text)]"
+                  >
+                    {formatCurrency(Number.parseFloat(amount), currency)}
+                  </span>
+                )}
+            </div>
             <input
               ref={amountInputRef}
               id="entry-amount"

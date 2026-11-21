@@ -6,13 +6,13 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 
 ---
 
-## Key Features (`v0.1.0`)
+## Key Features (`v0.1.1`)
 
-- **Quick Entry (< 5 seconds):** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and **Transfers** with numeric presets.
-- **Multi-Wallet Balance Accuracy:** Track Cash, Bank, E-Wallet, Savings, and Credit accounts with exact minor-unit arithmetic (`NUMERIC(15, 2)` in PostgreSQL) and neutral transfers between wallets.
-- **Monthly Cashflow & Daily Analytics:** View total net balance, monthly income vs. expenses, savings rate, top spending categories, and a daily cashflow bar chart.
-- **Monthly Category Budgets:** Set monthly caps per expense category with clear pacing status (*On track*, *Near limit* at >= 80%, and *Over budget*) plus custom category creation.
-- **Searchable Ledger & CSV Backup:** Filter transactions by keyword, wallet, or type and export monthly CSV backups at any time.
+- **Quick Entry (< 5 seconds):** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and **Transfers**, complete with numeric presets and a live formatted currency preview.
+- **Multi-Wallet Balance Accuracy:** Track Cash, Bank, E-Wallet, Savings, and Credit accounts with exact minor-unit arithmetic (`NUMERIC(15, 2)` via PostgreSQL `groupBy`) and neutral transfers between wallets.
+- **Timezone-Accurate Cashflow & Analytics:** View total net balance, monthly income vs. expenses, savings rate, top spending categories, and a daily cashflow bar chart aligned to your local timezone (e.g., WIB `UTC+7`).
+- **Monthly Category Budgets:** Set monthly caps per expense category with clear pacing status (*On track*, *Near limit* at >= 80%, and *Over budget*), two-step delete confirmations, and custom category creation.
+- **Searchable Ledger & Safe CSV Backup:** Filter transactions by keyword, wallet, or type and export formula-safe monthly CSV backups at any time.
 - **Crisp Utility + Restrained Liquid Glass UI:** Solid high-contrast matte financial cards in Light and OLED Dark modes paired with frosted Liquid Glass strictly on floating navigation chrome.
 - **Single-Owner Security Model:** Designed to be safely open-sourced in a public repository while keeping your live deployment locked exclusively to your configured `OWNER_EMAIL`.
 
@@ -42,20 +42,23 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 ├── DESIGN.md                 # Visual direction, verified WCAG AA palette, Liquid Glass dose cap
 ├── CHANGELOG.md              # Release history (Keep a Changelog + SemVer)
 ├── prisma/
-│   ├── schema.prisma         # PostgreSQL schema (User, Session, Wallet, Category, Transaction, Budget)
+│   ├── schema.prisma         # PostgreSQL schema (User, Session, Wallet, Category, Transaction, Budget, AuthRateLimit)
 │   └── seed.ts               # Safe fictional demo seed (never overwrites existing users)
 ├── public/
-│   └── sw.js                 # Lightweight shell Service Worker (never caches /api/*)
+│   └── sw.js                 # Static-asset Service Worker with offline fallback (never caches /api/* or auth HTML)
 └── src/
     ├── app/
     │   ├── api/              # Auth, Dashboard, Wallets, Transactions, Budgets, Categories, Export CSV
-    │   ├── icon.tsx          # Dynamic 512x512 PWA icon
+    │   ├── icon-192/         # Dynamic 192x192 PWA icon
+    │   ├── icon.tsx          # Dynamic 512x512 maskable PWA icon
     │   ├── apple-icon.tsx    # Dynamic 180x180 iOS Home Screen icon
     │   ├── manifest.ts       # Web App Manifest
     │   ├── layout.tsx        # Root layout, font, PWA metadata, no-flash theme init
     │   └── page.tsx          # Server-side auth gate entry
-    ├── components/           # AuthScreen, FoliqApp, QuickEntrySheet, CashflowChart, custom SVG icons
-    └── lib/                  # Prisma Neon client, auth helpers, exact money math, Zod schemas
+    ├── components/
+    │   ├── tabs/             # OverviewTab, LedgerTab, WalletsTab, BudgetsTab
+    │   └── ...               # AuthScreen, FoliqApp, QuickEntrySheet, CashflowChart, TransactionRow, custom SVG icons
+    └── lib/                  # Prisma Neon client, auth/rate-limit, CSRF security, exact money/timezone math, Zod schemas
 ```
 
 ---
@@ -157,8 +160,9 @@ vercel deploy --prod
 
 - **Zero Secrets in Git:** `.env*` files are strictly ignored by `.gitignore`; only `.env.example` is tracked.
 - **Single-Owner Registration Lock:** `/api/auth/register` rejects any email that does not match `OWNER_EMAIL` and blocks creation of additional accounts once the owner vault exists.
-- **Password & Session Hardening:** Passwords use Node `crypto.scrypt` with random per-user salts and constant-time comparison. Session cookies are `HttpOnly`, `Secure` (production), `SameSite=Lax`, and stored as HMAC-SHA256 hashes in Neon.
-- **No Private API Caching:** `public/sw.js` explicitly bypasses all `/api/*` requests so financial data is never cached in the Service Worker cache.
+- **Password, Session & Rate-Limit Hardening:** Passwords use Node `crypto.scrypt` with random per-user salts, constant-time comparison, and dummy verification on invalid emails. Session cookies are `HttpOnly`, `Secure` (production), `SameSite=Lax`, stored as HMAC-SHA256 hashes in Neon, and expired sessions are pruned automatically on sign-in. Brute-force rate limits persist in Neon (`auth_rate_limits`) across serverless instances.
+- **CSRF, CSP & CSV Export Safety:** All mutating API routes verify same-origin headers, `next.config.ts` enforces a `Content-Security-Policy` plus strict frame/content-type/referrer headers, and CSV exports neutralize spreadsheet formula prefixes (`=`, `+`, `-`, `@`).
+- **No Private Caching:** `public/sw.js` bypasses `/api/*` and dynamic authenticated HTML routes, caching only static assets with a clean offline fallback screen.
 - **Private Indexing Policy:** `robots: { index: false, follow: false }` prevents search engines from indexing your personal deployment.
 
 ---
@@ -177,8 +181,9 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 
 ## Roadmap
 
-- **v0.1.0 (Current):** Single-owner Neon auth, multi-wallet ledger, transfers, Quick Entry sheet, monthly cashflow & daily bar chart, category budgets, CSV export, iOS PWA shell.
-- **v0.2.0 (Planned):** Recurring transactions (subscriptions & bills), offline IndexedDB capture queue with background sync, and transaction editing.
+- **v0.1.0:** Single-owner Neon auth, multi-wallet ledger, transfers, Quick Entry sheet, monthly cashflow & daily bar chart, category budgets, CSV export, iOS PWA shell.
+- **v0.1.1 (Current):** Local timezone accuracy (WIB/UTC+7), Neon persistent serverless rate limiting, CSV formula injection protection, CSRF Origin check & CSP header, UUID param validation, PostgreSQL `groupBy` wallet balance aggregation, Show/Hide password toggle, live currency preview, two-step wallet/budget delete confirmations, 192px PWA icon, and modular tab decomposition.
+- **v0.2.0 (Planned):** Edit transactions, edit & unarchive wallets, Settings panel (currency/password/full export), and recurring transactions (subscriptions & bills).
 - **v0.3.0 (Planned):** Authenticated Apple Shortcuts webhook endpoint for one-tap Back Tap / Action Button expense capture from iPhone Lock Screen.
 
 ---

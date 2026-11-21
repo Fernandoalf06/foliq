@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertSameOrigin } from "@/lib/security";
 import { walletCreateSchema } from "@/lib/validators";
 
 export async function GET() {
@@ -25,6 +26,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const originError = assertSameOrigin(request);
+    if (originError) return originError;
+
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
