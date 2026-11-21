@@ -6,7 +6,7 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 
 ---
 
-## Key Features (`v0.4.0`)
+## Key Features (`v0.4.1`)
 
 - **Multi-Currency Wallets & Saved Exchange Rates:** Assign `IDR`, `USD`, `SGD`, or `EUR` per wallet, save custom conversion rates in Settings, and view native wallet balances alongside live converted totals (`≈`) in your Primary Display Currency.
 - **Savings Goals & Sinking Funds:** Create dedicated savings targets (emergency fund, travel, gadgets) inside **Wallets & Goals** with optional target dates, optional linked wallets, quick `+ Add` / `Withdraw` progress controls, and an Overview progress strip.
@@ -211,7 +211,8 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 - **v0.2.0:** Edit transactions, inline wallet editing & archived wallet restoration, and dedicated Settings panel (profile/currency, change password with session revocation, all-time CSV backup, appearance & vault info).
 - **v0.2.1:** Password-change persistent rate limiting, Settings feedback persistence fix, Quick Entry transfer/date guardrails, server-side active-wallet & archived-wallet invariants, live currency previews on Wallet/Budget forms, dynamic version display, and mandatory Full Audit Gate in `AGENTS.md`.
 - **v0.3.0:** Recurring transactions (subscriptions, bills & salary with atomic one-tap recording), local offline capture queue with auto-sync on reconnect, and authenticated Apple Shortcuts webhook + revocable `flq_` API tokens.
-- **v0.4.0 (Current):** Multi-currency wallets with saved Neon exchange rates, Savings Goals / Sinking Funds with quick contribute/withdraw progress tracking, and 6M/12M Net Worth & Cashflow trend charts.
+- **v0.4.0:** Multi-currency wallets with saved Neon exchange rates, Savings Goals / Sinking Funds with quick contribute/withdraw progress tracking, and 6M/12M Net Worth & Cashflow trend charts.
+- **v0.4.1 (Current):** Refined Liquid Glass floating dock opacity & blur (`26px`) for crisp scrolled-text legibility in Light and Dark OLED modes, and fixed desktop `Wallet Name` placeholder clipping.
 - **v1.0.0 (Planned):** CSV bank statement import wizard, customizable net-worth reports / printable monthly PDF summaries, and final v1.0 stability milestone.
 
 ---

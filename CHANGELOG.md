@@ -4,6 +4,17 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.1] - 2026-11-21
+
+### Fixed
+
+- **Liquid Glass Floating Dock Legibility:** Raised `--glass-bg` opacity (`0.90` in Light mode, `0.88` in Dark OLED mode) and increased backdrop blur to `26px` so scrolled card headings no longer bleed visually behind mobile bottom dock labels.
+- **Desktop Wallet Placeholder Clipping:** Shortened the Add Wallet `Wallet Name` placeholder (`"BCA, GoPay, USD"`) so it fits cleanly without right-edge text clipping on desktop viewports.
+
+### Changed
+
+- Bumped Service Worker shell cache namespace to `foliq-shell-v0-4-1`.
+
 ## [0.4.0] - 2026-11-21
 
 ### Added

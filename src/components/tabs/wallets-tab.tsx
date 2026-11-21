@@ -400,7 +400,7 @@ export function WalletsTab({
               type="text"
               required
               maxLength={40}
-              placeholder="BCA Savings, USD Wise"
+              placeholder="BCA, GoPay, USD"
               value={walletName}
               onChange={(e) => setWalletName(e.target.value)}
               className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)]"
