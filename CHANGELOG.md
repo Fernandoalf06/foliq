@@ -4,6 +4,24 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.0] - 2026-11-21
+
+### Added
+
+- **Edit Transactions (`PATCH /api/transactions/[id]`):** Tap the Edit button on any Overview or Ledger entry to modify its type, amount, wallet, transfer destination, category, date/time, or note inside the Liquid Glass sheet without deleting and re-entering.
+- **Edit & Restore Archived Wallets:** Added inline editing for wallet name, account type, and opening balance on every wallet card, plus an **Archived Wallets** section with one-tap restoration (`isArchived: false`) so archived wallets and their balances are never lost.
+- **Settings Panel (`SettingsTab`):** Added a dedicated Settings view accessible from the desktop sidebar and mobile top bar, featuring:
+  - **Profile & Primary Currency (`PATCH /api/settings/profile`):** Update display name and switch primary currency (`IDR`, `USD`, `SGD`, `EUR`) across wallets.
+  - **Change Owner Password (`POST /api/settings/password`):** Update owner password with Show/Hide toggle and automatic revocation of all other active device sessions.
+  - **All-Time & Monthly CSV Backup:** Direct download actions for full historical CSV backups (`/api/export`) and selected-month backups.
+  - **Appearance & Vault Info:** Light/Dark OLED toggle, active owner identity, version display (`v0.2.0`), and Sign Out control.
+- **Validation Regression Tests:** Added unit test suite (`src/lib/validators.test.ts`) covering UUID validation, transaction transfer/category invariants, profile updates, and password-change rules.
+
+### Changed
+
+- Updated Service Worker cache namespace to `foliq-shell-v0-2-0`.
+- Replaced the mobile top-right Sign Out icon with a dedicated Settings shortcut (keeping Sign Out inside Settings and the desktop rail) so all settings remain one tap away while keeping the floating Liquid Glass bottom dock focused on the 4 core financial views + Quick Entry.
+
 ## [0.1.1] - 2026-11-21
 
 ### Security

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const { start, end } = getMonthRangeForOffset(month, tzOffset);
 
     const [
-      wallets,
+      allWallets,
       categories,
       sourceSums,
       incomingTransferSums,
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       budgets,
     ] = await Promise.all([
       prisma.wallet.findMany({
-        where: { userId: user.id, isArchived: false },
+        where: { userId: user.id },
         orderBy: { createdAt: "asc" },
       }),
       prisma.category.findMany({
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
 
     // Aggregate exact wallet balances in minor units using PostgreSQL groupBy sums
     const balancesMinor = new Map<string, number>();
-    for (const w of wallets) {
+    for (const w of allWallets) {
       balancesMinor.set(w.id, toMinorUnits(w.initialBalance.toString()));
     }
 
@@ -110,14 +110,21 @@ export async function GET(request: NextRequest) {
       balancesMinor.set(row.targetWalletId, current + minor);
     }
 
-    const serializedWallets = wallets.map((w) => ({
+    const toSerializedWallet = (w: (typeof allWallets)[number]) => ({
       id: w.id,
       name: w.name,
       type: w.type,
       currency: w.currency,
       initialBalance: Number(w.initialBalance.toString()),
       balance: fromMinorUnits(balancesMinor.get(w.id) ?? 0),
-    }));
+    });
+
+    const serializedWallets = allWallets
+      .filter((w) => !w.isArchived)
+      .map(toSerializedWallet);
+    const archivedWallets = allWallets
+      .filter((w) => w.isArchived)
+      .map(toSerializedWallet);
 
     const netWorthMinor = serializedWallets.reduce(
       (sum, w) => sum + toMinorUnits(w.balance),
@@ -211,6 +218,7 @@ export async function GET(request: NextRequest) {
       netWorth: fromMinorUnits(netWorthMinor),
       cashflow,
       wallets: serializedWallets,
+      archivedWallets,
       categories: categories.map((c) => ({
         id: c.id,
         name: c.name,

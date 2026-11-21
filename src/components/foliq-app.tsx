@@ -11,6 +11,7 @@ import {
   MoonIcon,
   OverviewIcon,
   PlusIcon,
+  SettingsIcon,
   SignOutIcon,
   SunIcon,
   WalletIcon,
@@ -19,12 +20,17 @@ import { QuickEntrySheet } from "./quick-entry-sheet";
 import { BudgetsTab } from "./tabs/budgets-tab";
 import { LedgerTab } from "./tabs/ledger-tab";
 import { OverviewTab } from "./tabs/overview-tab";
+import { SettingsTab } from "./tabs/settings-tab";
 import { WalletsTab } from "./tabs/wallets-tab";
 import { useTheme } from "./theme-provider";
 import { formatMonthKey } from "@/lib/money";
-import type { DashboardPayload, TransactionType } from "@/lib/types";
+import type {
+  DashboardPayload,
+  TransactionItem,
+  TransactionType,
+} from "@/lib/types";
 
-type ActiveTab = "overview" | "ledger" | "wallets" | "budgets";
+type ActiveTab = "overview" | "ledger" | "wallets" | "budgets" | "settings";
 
 interface FoliqAppProps {
   onSignedOut: () => void;
@@ -59,6 +65,8 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetInitialType, setSheetInitialType] =
     useState<TransactionType>("EXPENSE");
+  const [editingTransaction, setEditingTransaction] =
+    useState<TransactionItem | null>(null);
 
   const fetchDashboardData = useCallback(
     async (
@@ -124,8 +132,20 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
   }, [month, fetchDashboardData]);
 
   const openQuickEntry = (initialType: TransactionType = "EXPENSE") => {
+    setEditingTransaction(null);
     setSheetInitialType(initialType);
     setSheetOpen(true);
+  };
+
+  const openEditTransaction = (tx: TransactionItem) => {
+    setEditingTransaction(tx);
+    setSheetInitialType(tx.type);
+    setSheetOpen(true);
+  };
+
+  const closeSheet = () => {
+    setSheetOpen(false);
+    setEditingTransaction(null);
   };
 
   const handleSignOut = async () => {
@@ -163,6 +183,25 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
     }
   };
 
+  const handleRestoreWallet = async (id: string) => {
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/wallets/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isArchived: false }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setActionError(json.error || "Failed to restore wallet.");
+        return;
+      }
+      await loadDashboard(month);
+    } catch {
+      setActionError("Network error while restoring wallet.");
+    }
+  };
+
   const handleDeleteBudget = async (id: string) => {
     setActionError(null);
     try {
@@ -184,8 +223,8 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
   const currency = data?.user.currency ?? "IDR";
   const exportHref = `/api/export?month=${encodeURIComponent(month)}&tzOffset=${encodeURIComponent(String(tzOffset))}`;
 
-  const navItems: Array<{
-    id: ActiveTab;
+  const primaryDockItems: Array<{
+    id: Exclude<ActiveTab, "settings">;
     label: string;
     icon: React.ReactNode;
   }> = [
@@ -195,6 +234,15 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
     { id: "budgets", label: "Budgets", icon: <BudgetIcon /> },
   ];
 
+  const desktopNavItems: Array<{
+    id: ActiveTab;
+    label: string;
+    icon: React.ReactNode;
+  }> = [
+    ...primaryDockItems,
+    { id: "settings", label: "Settings", icon: <SettingsIcon /> },
+  ];
+
   const pageHeading =
     activeTab === "overview"
       ? "Overview"
@@ -202,7 +250,9 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
         ? "Ledger"
         : activeTab === "wallets"
           ? "Wallets"
-          : "Monthly Budgets";
+          : activeTab === "budgets"
+            ? "Monthly Budgets"
+            : "Settings";
 
   return (
     <div className="min-h-dvh bg-[var(--ground)] text-[var(--ink)]">
@@ -230,7 +280,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
         </button>
 
         <nav aria-label="Primary navigation" className="flex-1 space-y-1">
-          {navItems.map((item) => {
+          {desktopNavItems.map((item) => {
             const active = activeTab === item.id;
             return (
               <button
@@ -340,11 +390,16 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
               </button>
               <button
                 type="button"
-                onClick={() => void handleSignOut()}
-                aria-label="Sign out"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-1)] text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--expense)]"
+                onClick={() => setActiveTab("settings")}
+                aria-label="Open settings"
+                aria-current={activeTab === "settings" ? "page" : undefined}
+                className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${
+                  activeTab === "settings"
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-text)]"
+                    : "border-[var(--border)] bg-[var(--surface-1)] text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+                }`}
               >
-                <SignOutIcon className="h-4 w-4" />
+                <SettingsIcon className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -410,6 +465,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
               currency={currency}
               monthLabel={monthLabel}
               onOpenQuickEntry={openQuickEntry}
+              onEditTransaction={openEditTransaction}
               onNavigateTab={setActiveTab}
             />
           )}
@@ -421,6 +477,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
               monthLabel={monthLabel}
               exportHref={exportHref}
               onOpenQuickEntry={openQuickEntry}
+              onEditTransaction={openEditTransaction}
               onDeleteTransaction={handleDeleteTransaction}
             />
           )}
@@ -428,9 +485,11 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           {data && activeTab === "wallets" && (
             <WalletsTab
               wallets={data.wallets}
+              archivedWallets={data.archivedWallets}
               currency={currency}
               onRefresh={() => loadDashboard(month)}
               onRemoveWallet={handleRemoveWallet}
+              onRestoreWallet={handleRestoreWallet}
             />
           )}
 
@@ -445,6 +504,17 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
               onDeleteBudget={handleDeleteBudget}
             />
           )}
+
+          {data && activeTab === "settings" && (
+            <SettingsTab
+              key={`${data.user.name}-${data.user.currency}`}
+              user={data.user}
+              monthLabel={monthLabel}
+              monthExportHref={exportHref}
+              onRefresh={() => loadDashboard(month)}
+              onSignOut={handleSignOut}
+            />
+          )}
         </main>
       </div>
 
@@ -454,7 +524,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           aria-label="Mobile navigation"
           className="liquid-glass pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-1 rounded-[28px] px-2 py-1.5"
         >
-          {navItems.slice(0, 2).map((item) => {
+          {primaryDockItems.slice(0, 2).map((item) => {
             const active = activeTab === item.id;
             return (
               <button
@@ -483,7 +553,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
             <PlusIcon className="h-5 w-5" />
           </button>
 
-          {navItems.slice(2).map((item) => {
+          {primaryDockItems.slice(2).map((item) => {
             const active = activeTab === item.id;
             return (
               <button
@@ -509,10 +579,11 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
         <QuickEntrySheet
           open={sheetOpen}
           initialType={sheetInitialType}
+          editingTransaction={editingTransaction}
           currency={currency}
           wallets={data.wallets}
           categories={data.categories}
-          onClose={() => setSheetOpen(false)}
+          onClose={closeSheet}
           onSaved={() => loadDashboard(month)}
         />
       )}

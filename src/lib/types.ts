@@ -74,6 +74,7 @@ export interface DashboardPayload {
     savingsRate: number;
   };
   wallets: WalletItem[];
+  archivedWallets: WalletItem[];
   categories: CategoryItem[];
   transactions: TransactionItem[];
   budgets: BudgetItem[];

@@ -5,13 +5,18 @@ import { CashflowChart } from "../cashflow-chart";
 import { CategoryGlyph, PlusIcon, TransferIcon } from "../icons";
 import { TransactionRow } from "../transaction-row";
 import { formatCurrency } from "@/lib/money";
-import type { DashboardPayload, TransactionType } from "@/lib/types";
+import type {
+  DashboardPayload,
+  TransactionItem,
+  TransactionType,
+} from "@/lib/types";
 
 interface OverviewTabProps {
   data: DashboardPayload;
   currency: string;
   monthLabel: string;
   onOpenQuickEntry: (type: TransactionType) => void;
+  onEditTransaction: (tx: TransactionItem) => void;
   onNavigateTab: (tab: "ledger" | "budgets") => void;
 }
 
@@ -20,6 +25,7 @@ export function OverviewTab({
   currency,
   monthLabel,
   onOpenQuickEntry,
+  onEditTransaction,
   onNavigateTab,
 }: OverviewTabProps) {
   return (
@@ -145,7 +151,13 @@ export function OverviewTab({
           ) : (
             <ul className="divide-y divide-[var(--border)]">
               {data.transactions.slice(0, 6).map((tx) => (
-                <TransactionRow key={tx.id} tx={tx} currency={currency} />
+                <TransactionRow
+                  key={tx.id}
+                  tx={tx}
+                  currency={currency}
+                  allowActions
+                  onEdit={onEditTransaction}
+                />
               ))}
             </ul>
           )}

@@ -107,3 +107,34 @@ export const categoryCreateSchema = z.object({
     ])
     .default("tag"),
 });
+
+export const profileUpdateSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(60),
+  currency: z.enum(["IDR", "USD", "SGD", "EUR"]),
+});
+
+export const passwordChangeSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required").max(128),
+    newPassword: z
+      .string()
+      .min(8, "New password must be at least 8 characters")
+      .max(128, "Password is too long"),
+    confirmPassword: z.string().min(1, "Confirm your new password").max(128),
+  })
+  .superRefine((data, ctx) => {
+    if (data.newPassword !== data.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["confirmPassword"],
+        message: "New password and confirmation do not match",
+      });
+    }
+    if (data.newPassword === data.currentPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["newPassword"],
+        message: "New password must be different from your current password",
+      });
+    }
+  });

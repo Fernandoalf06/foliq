@@ -3,11 +3,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CategoryGlyph, CloseIcon, TransferIcon } from "./icons";
 import { formatCurrency } from "@/lib/money";
-import type { CategoryItem, TransactionType, WalletItem } from "@/lib/types";
+import type {
+  CategoryItem,
+  TransactionItem,
+  TransactionType,
+  WalletItem,
+} from "@/lib/types";
 
 interface QuickEntrySheetProps {
   open: boolean;
   initialType?: TransactionType;
+  editingTransaction?: TransactionItem | null;
   currency: string;
   wallets: WalletItem[];
   categories: CategoryItem[];
@@ -22,27 +28,45 @@ function toLocalDateTimeInput(date: Date): string {
 
 export function QuickEntrySheet(props: QuickEntrySheetProps) {
   if (!props.open) return null;
-  return <QuickEntryDialog {...props} />;
+  const dialogKey = props.editingTransaction?.id ?? `new-${props.initialType ?? "EXPENSE"}`;
+  return <QuickEntryDialog key={dialogKey} {...props} />;
 }
 
 function QuickEntryDialog({
   initialType = "EXPENSE",
+  editingTransaction = null,
   currency,
   wallets,
   categories,
   onClose,
   onSaved,
 }: QuickEntrySheetProps) {
-  const [type, setType] = useState<TransactionType>(initialType);
-  const [amount, setAmount] = useState("");
-  const [walletId, setWalletId] = useState(() => wallets[0]?.id ?? "");
-  const [targetWalletId, setTargetWalletId] = useState(
-    () => wallets[1]?.id ?? wallets[0]?.id ?? "",
+  const isEditing = Boolean(editingTransaction);
+
+  const [type, setType] = useState<TransactionType>(
+    editingTransaction?.type ?? initialType,
   );
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [note, setNote] = useState("");
+  const [amount, setAmount] = useState(
+    editingTransaction ? String(editingTransaction.amount) : "",
+  );
+  const [walletId, setWalletId] = useState(
+    () => editingTransaction?.wallet.id ?? wallets[0]?.id ?? "",
+  );
+  const [targetWalletId, setTargetWalletId] = useState(
+    () =>
+      editingTransaction?.targetWallet?.id ??
+      wallets[1]?.id ??
+      wallets[0]?.id ??
+      "",
+  );
+  const [selectedCategoryId, setSelectedCategoryId] = useState(
+    () => editingTransaction?.category?.id ?? "",
+  );
+  const [note, setNote] = useState(editingTransaction?.note ?? "");
   const [occurredLocal, setOccurredLocal] = useState(() =>
-    toLocalDateTimeInput(new Date()),
+    toLocalDateTimeInput(
+      editingTransaction ? new Date(editingTransaction.occurredAt) : new Date(),
+    ),
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +78,35 @@ function QuickEntryDialog({
   )
     ? selectedCategoryId
     : (filteredCategories[0]?.id ?? "");
+
+  // Ensure an archived wallet from a historical transaction remains selectable while editing
+  const selectableWallets = [...wallets];
+  if (
+    editingTransaction &&
+    !selectableWallets.some((w) => w.id === editingTransaction.wallet.id)
+  ) {
+    selectableWallets.push({
+      id: editingTransaction.wallet.id,
+      name: `${editingTransaction.wallet.name} (Archived)`,
+      type: editingTransaction.wallet.type,
+      currency,
+      initialBalance: 0,
+      balance: 0,
+    });
+  }
+  if (
+    editingTransaction?.targetWallet &&
+    !selectableWallets.some((w) => w.id === editingTransaction.targetWallet?.id)
+  ) {
+    selectableWallets.push({
+      id: editingTransaction.targetWallet.id,
+      name: `${editingTransaction.targetWallet.name} (Archived)`,
+      type: editingTransaction.targetWallet.type,
+      currency,
+      initialBalance: 0,
+      balance: 0,
+    });
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -110,8 +163,13 @@ function QuickEntryDialog({
     setSubmitting(true);
     try {
       const occurredAt = new Date(occurredLocal).toISOString();
-      const res = await fetch("/api/transactions", {
-        method: "POST",
+      const endpoint = editingTransaction
+        ? `/api/transactions/${editingTransaction.id}`
+        : "/api/transactions";
+      const method = editingTransaction ? "PATCH" : "POST";
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type,
@@ -140,6 +198,8 @@ function QuickEntryDialog({
     }
   };
 
+  const numericAmount = Number.parseFloat(amount);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4"
@@ -159,12 +219,14 @@ function QuickEntryDialog({
             id="quick-entry-title"
             className="text-lg font-bold text-[var(--ink)]"
           >
-            Record Entry
+            {isEditing ? "Edit Entry" : "Record Entry"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close record entry dialog"
+            aria-label={
+              isEditing ? "Close edit entry dialog" : "Close record entry dialog"
+            }
             className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
           >
             <CloseIcon className="h-5 w-5" />
@@ -223,13 +285,13 @@ function QuickEntryDialog({
                 Amount ({currency})
               </label>
               {amount.trim() !== "" &&
-                Number.isFinite(Number.parseFloat(amount)) &&
-                Number.parseFloat(amount) > 0 && (
+                Number.isFinite(numericAmount) &&
+                numericAmount > 0 && (
                   <span
                     aria-live="polite"
                     className="tabular-nums text-xs font-semibold text-[var(--accent-text)]"
                   >
-                    {formatCurrency(Number.parseFloat(amount), currency)}
+                    {formatCurrency(numericAmount, currency)}
                   </span>
                 )}
             </div>
@@ -275,7 +337,7 @@ function QuickEntryDialog({
                 required
                 className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm font-medium text-[var(--ink)]"
               >
-                {wallets.map((w) => (
+                {selectableWallets.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name} ({w.type})
                   </option>
@@ -298,7 +360,7 @@ function QuickEntryDialog({
                   required
                   className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm font-medium text-[var(--ink)]"
                 >
-                  {wallets.map((w) => (
+                  {selectableWallets.map((w) => (
                     <option key={w.id} value={w.id}>
                       {w.name} ({w.type})
                     </option>
@@ -404,10 +466,16 @@ function QuickEntryDialog({
 
           <button
             type="submit"
-            disabled={submitting || wallets.length === 0}
+            disabled={submitting || selectableWallets.length === 0}
             className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-white transition-transform hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
           >
-            {submitting ? "Saving entry..." : "Save Entry"}
+            {submitting
+              ? isEditing
+                ? "Saving changes..."
+                : "Saving entry..."
+              : isEditing
+                ? "Save Changes"
+                : "Save Entry"}
           </button>
         </form>
       </div>

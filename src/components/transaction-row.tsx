@@ -1,15 +1,16 @@
 "use client";
 
 import React from "react";
-import { CategoryGlyph, TransferIcon, TrashIcon } from "./icons";
+import { CategoryGlyph, EditIcon, TransferIcon, TrashIcon } from "./icons";
 import { formatCurrency } from "@/lib/money";
 import type { TransactionItem } from "@/lib/types";
 
 interface TransactionRowProps {
   tx: TransactionItem;
   currency: string;
-  allowDelete?: boolean;
+  allowActions?: boolean;
   isConfirmingDelete?: boolean;
+  onEdit?: (tx: TransactionItem) => void;
   onRequestDelete?: (id: string) => void;
   onConfirmDelete?: (id: string) => void;
   onCancelDelete?: () => void;
@@ -18,8 +19,9 @@ interface TransactionRowProps {
 export function TransactionRow({
   tx,
   currency,
-  allowDelete = false,
+  allowActions = false,
   isConfirmingDelete = false,
+  onEdit,
   onRequestDelete,
   onConfirmDelete,
   onCancelDelete,
@@ -42,7 +44,7 @@ export function TransactionRow({
       });
 
   return (
-    <li className="flex items-center justify-between gap-3 py-3.5 first:pt-1 last:pb-1">
+    <li className="flex items-center justify-between gap-2 py-3.5 first:pt-1 last:pb-1 sm:gap-3">
       <div className="flex min-w-0 items-center gap-3">
         <div
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
@@ -76,7 +78,7 @@ export function TransactionRow({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
         <span
           className="tabular-nums text-sm font-semibold"
           style={{
@@ -90,7 +92,7 @@ export function TransactionRow({
           {amountText}
         </span>
 
-        {allowDelete && (
+        {allowActions && (
           <>
             {isConfirmingDelete ? (
               <div className="flex items-center gap-1">
@@ -110,14 +112,28 @@ export function TransactionRow({
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => onRequestDelete?.(tx.id)}
-                aria-label={`Delete ${title} transaction`}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--expense)]"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button>
+              <div className="flex items-center">
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={() => onEdit(tx)}
+                    aria-label={`Edit ${title} transaction`}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--accent-text)]"
+                  >
+                    <EditIcon className="h-4 w-4" />
+                  </button>
+                )}
+                {onRequestDelete && (
+                  <button
+                    type="button"
+                    onClick={() => onRequestDelete(tx.id)}
+                    aria-label={`Delete ${title} transaction`}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--expense)]"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}

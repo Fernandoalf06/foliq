@@ -15,6 +15,7 @@ interface LedgerTabProps {
   monthLabel: string;
   exportHref: string;
   onOpenQuickEntry: (type: TransactionType) => void;
+  onEditTransaction: (tx: TransactionItem) => void;
   onDeleteTransaction: (id: string) => Promise<void>;
 }
 
@@ -41,6 +42,7 @@ export function LedgerTab({
   monthLabel,
   exportHref,
   onOpenQuickEntry,
+  onEditTransaction,
   onDeleteTransaction,
 }: LedgerTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -229,8 +231,9 @@ export function LedgerTab({
                     key={tx.id}
                     tx={tx}
                     currency={currency}
-                    allowDelete
+                    allowActions
                     isConfirmingDelete={confirmDeleteTxId === tx.id}
+                    onEdit={onEditTransaction}
                     onRequestDelete={setConfirmDeleteTxId}
                     onConfirmDelete={(id) => void handleConfirmDelete(id)}
                     onCancelDelete={() => setConfirmDeleteTxId(null)}

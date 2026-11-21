@@ -6,13 +6,13 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 
 ---
 
-## Key Features (`v0.1.1`)
+## Key Features (`v0.2.0`)
 
-- **Quick Entry (< 5 seconds):** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and **Transfers**, complete with numeric presets and a live formatted currency preview.
-- **Multi-Wallet Balance Accuracy:** Track Cash, Bank, E-Wallet, Savings, and Credit accounts with exact minor-unit arithmetic (`NUMERIC(15, 2)` via PostgreSQL `groupBy`) and neutral transfers between wallets.
+- **Quick Entry & Full Transaction Editing:** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and **Transfers** with numeric presets, live formatted currency preview, and full inline editing of any existing entry.
+- **Multi-Wallet Management & Archiving:** Track, edit, archive, and restore Cash, Bank, E-Wallet, Savings, and Credit accounts with exact minor-unit arithmetic (`NUMERIC(15, 2)` via PostgreSQL `groupBy`) and neutral transfers between wallets.
 - **Timezone-Accurate Cashflow & Analytics:** View total net balance, monthly income vs. expenses, savings rate, top spending categories, and a daily cashflow bar chart aligned to your local timezone (e.g., WIB `UTC+7`).
 - **Monthly Category Budgets:** Set monthly caps per expense category with clear pacing status (*On track*, *Near limit* at >= 80%, and *Over budget*), two-step delete confirmations, and custom category creation.
-- **Searchable Ledger & Safe CSV Backup:** Filter transactions by keyword, wallet, or type and export formula-safe monthly CSV backups at any time.
+- **Settings & Vault Controls:** Dedicated Settings view for updating display name and primary currency (`IDR`, `USD`, `SGD`, `EUR`), changing owner password with automatic cross-device session revocation, toggling Light / OLED Dark mode, and downloading all-time or monthly CSV backups.
 - **Crisp Utility + Restrained Liquid Glass UI:** Solid high-contrast matte financial cards in Light and OLED Dark modes paired with frosted Liquid Glass strictly on floating navigation chrome.
 - **Single-Owner Security Model:** Designed to be safely open-sourced in a public repository while keeping your live deployment locked exclusively to your configured `OWNER_EMAIL`.
 
@@ -48,7 +48,7 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 │   └── sw.js                 # Static-asset Service Worker with offline fallback (never caches /api/* or auth HTML)
 └── src/
     ├── app/
-    │   ├── api/              # Auth, Dashboard, Wallets, Transactions, Budgets, Categories, Export CSV
+    │   ├── api/              # Auth, Dashboard, Wallets, Transactions, Budgets, Categories, Settings, Export CSV
     │   ├── icon-192/         # Dynamic 192x192 PWA icon
     │   ├── icon.tsx          # Dynamic 512x512 maskable PWA icon
     │   ├── apple-icon.tsx    # Dynamic 180x180 iOS Home Screen icon
@@ -56,7 +56,7 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
     │   ├── layout.tsx        # Root layout, font, PWA metadata, no-flash theme init
     │   └── page.tsx          # Server-side auth gate entry
     ├── components/
-    │   ├── tabs/             # OverviewTab, LedgerTab, WalletsTab, BudgetsTab
+    │   ├── tabs/             # OverviewTab, LedgerTab, WalletsTab, BudgetsTab, SettingsTab
     │   └── ...               # AuthScreen, FoliqApp, QuickEntrySheet, CashflowChart, TransactionRow, custom SVG icons
     └── lib/                  # Prisma Neon client, auth/rate-limit, CSRF security, exact money/timezone math, Zod schemas
 ```
@@ -182,9 +182,9 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 ## Roadmap
 
 - **v0.1.0:** Single-owner Neon auth, multi-wallet ledger, transfers, Quick Entry sheet, monthly cashflow & daily bar chart, category budgets, CSV export, iOS PWA shell.
-- **v0.1.1 (Current):** Local timezone accuracy (WIB/UTC+7), Neon persistent serverless rate limiting, CSV formula injection protection, CSRF Origin check & CSP header, UUID param validation, PostgreSQL `groupBy` wallet balance aggregation, Show/Hide password toggle, live currency preview, two-step wallet/budget delete confirmations, 192px PWA icon, and modular tab decomposition.
-- **v0.2.0 (Planned):** Edit transactions, edit & unarchive wallets, Settings panel (currency/password/full export), and recurring transactions (subscriptions & bills).
-- **v0.3.0 (Planned):** Authenticated Apple Shortcuts webhook endpoint for one-tap Back Tap / Action Button expense capture from iPhone Lock Screen.
+- **v0.1.1:** Local timezone accuracy (WIB/UTC+7), Neon persistent serverless rate limiting, CSV formula injection protection, CSRF Origin check & CSP header, UUID param validation, PostgreSQL `groupBy` wallet balance aggregation, Show/Hide password toggle, live currency preview, two-step wallet/budget delete confirmations, 192px PWA icon, and modular tab decomposition.
+- **v0.2.0 (Current):** Edit transactions, inline wallet editing & archived wallet restoration, and dedicated Settings panel (profile/currency, change password with session revocation, all-time CSV backup, appearance & vault info).
+- **v0.3.0 (Planned):** Recurring transactions (subscriptions & bills), offline capture queue, and authenticated Apple Shortcuts webhook endpoint for one-tap Back Tap / Action Button expense capture from iPhone Lock Screen.
 
 ---
 
