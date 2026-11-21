@@ -6,11 +6,13 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 
 ---
 
-## Key Features (`v0.4.1`)
+## Key Features (`v1.0.0` Stable)
 
 - **Multi-Currency Wallets & Saved Exchange Rates:** Assign `IDR`, `USD`, `SGD`, or `EUR` per wallet, save custom conversion rates in Settings, and view native wallet balances alongside live converted totals (`≈`) in your Primary Display Currency.
 - **Savings Goals & Sinking Funds:** Create dedicated savings targets (emergency fund, travel, gadgets) inside **Wallets & Goals** with optional target dates, optional linked wallets, quick `+ Add` / `Withdraw` progress controls, and an Overview progress strip.
 - **6-Month & 12-Month Net Worth & Cashflow Trends:** Analyze multi-month **Net Worth** growth curves and **Income vs. Expense** bar trends across `6M` and `12M` windows directly on Overview.
+- **CSV Bank Statement Import Wizard:** Upload `.csv` bank statements or Foliq backups (comma or semicolon delimited, Indonesian & international number/date formats) with automatic column mapping, live preview, and duplicate skipping (up to 500 rows per batch).
+- **Printable Monthly Report / PDF Summary (`/report`):** Generate an authenticated, print-optimized monthly financial statement covering KPIs, wallet snapshots, category breakdown, budgets, savings goals, and complete ledger entries ready for iOS/Desktop **Save as PDF**.
 - **Quick Entry, Editing & Offline Capture Queue:** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and same-currency **Transfers** with wallet-aware currency presets, live formatted previews, inline editing, and automatic local queueing + auto-sync when capturing offline.
 - **Recurring Bills, Subscriptions & Income:** Schedule weekly, monthly, or yearly bills and salary with timezone-aware *Due now* / *Upcoming (7d)* alerts on Overview, atomic one-tap **Record Now** (advancing `nextDueDate` with month-end clamping), and Pause/Resume controls.
 - **Apple Shortcuts Quick Capture API:** Generate revocable `flq_...` Bearer tokens in Settings to trigger instant expense logging from iPhone **Back Tap**, **Action Button**, or **Siri Shortcuts** via `POST /api/shortcuts/record`.
@@ -50,7 +52,8 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 │   └── sw.js                 # Static-asset Service Worker with offline fallback (never caches /api/* or auth HTML)
 └── src/
     ├── app/
-    │   ├── api/              # Auth, Dashboard, Wallets, Transactions, Budgets, Recurring, Goals, Categories, Settings/Rates/Tokens, Shortcuts, Export CSV
+    │   ├── api/              # Auth, Dashboard, Wallets, Transactions (+ CSV Import), Budgets, Recurring, Goals, Categories, Settings/Rates/Tokens, Shortcuts, Export CSV
+    │   ├── report/           # Authenticated Printable Monthly Financial Statement / PDF Summary
     │   ├── icon-192/         # Dynamic 192x192 PWA icon
     │   ├── icon.tsx          # Dynamic 512x512 maskable PWA icon
     │   ├── apple-icon.tsx    # Dynamic 180x180 iOS Home Screen icon
@@ -58,9 +61,9 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
     │   ├── layout.tsx        # Root layout, font, PWA metadata, no-flash theme init
     │   └── page.tsx          # Server-side auth gate entry
     ├── components/
-    │   ├── tabs/             # OverviewTab, LedgerTab, WalletsTab, GoalsSection, BudgetsTab, RecurringSection, SettingsTab, ExchangeRatesSection, ShortcutsSection
-    │   └── ...               # AuthScreen, FoliqApp, QuickEntrySheet, CashflowChart, TrendChart, TransactionRow, custom SVG icons
-    └── lib/                  # Prisma Neon client, auth/token/rate-limit, CSRF security, money/currency/recurring/offline-queue logic, Zod schemas
+    │   ├── tabs/             # OverviewTab, LedgerTab, WalletsTab, GoalsSection, BudgetsTab, RecurringSection, SettingsTab, ExchangeRatesSection, CsvImportSection, ShortcutsSection
+    │   └── ...               # AuthScreen, FoliqApp, QuickEntrySheet, CashflowChart, TrendChart, TransactionRow, ReportActions, custom SVG icons
+    └── lib/                  # Prisma Neon client, auth/token/rate-limit, CSRF security, money/currency/recurring/csv-import/offline-queue logic, Zod schemas
 ```
 
 ---
@@ -212,8 +215,8 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 - **v0.2.1:** Password-change persistent rate limiting, Settings feedback persistence fix, Quick Entry transfer/date guardrails, server-side active-wallet & archived-wallet invariants, live currency previews on Wallet/Budget forms, dynamic version display, and mandatory Full Audit Gate in `AGENTS.md`.
 - **v0.3.0:** Recurring transactions (subscriptions, bills & salary with atomic one-tap recording), local offline capture queue with auto-sync on reconnect, and authenticated Apple Shortcuts webhook + revocable `flq_` API tokens.
 - **v0.4.0:** Multi-currency wallets with saved Neon exchange rates, Savings Goals / Sinking Funds with quick contribute/withdraw progress tracking, and 6M/12M Net Worth & Cashflow trend charts.
-- **v0.4.1 (Current):** Refined Liquid Glass floating dock opacity & blur (`26px`) for crisp scrolled-text legibility in Light and Dark OLED modes, and fixed desktop `Wallet Name` placeholder clipping.
-- **v1.0.0 (Planned):** CSV bank statement import wizard, customizable net-worth reports / printable monthly PDF summaries, and final v1.0 stability milestone.
+- **v0.4.1:** Refined Liquid Glass floating dock opacity & blur (`26px`) for crisp scrolled-text legibility in Light and Dark OLED modes, and fixed desktop `Wallet Name` placeholder clipping.
+- **v1.0.0 (Current Stable Release):** CSV Bank Statement Import Wizard (RFC-4180 parser, Indonesian/international number & date formats, column mapping, duplicate skipping) and authenticated Printable Monthly Financial Report / PDF Summary (`/report`).
 
 ---
 

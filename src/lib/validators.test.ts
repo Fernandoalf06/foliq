@@ -10,6 +10,7 @@ import {
   savingsGoalUpdateSchema,
   shortcutRecordSchema,
   transactionCreateSchema,
+  transactionImportBatchSchema,
   uuidSchema,
 } from "./validators";
 
@@ -186,6 +187,36 @@ describe("validation schemas", () => {
         fromCurrency: "USD",
         toCurrency: "USD",
         rate: 1,
+      }).success,
+    ).toBe(false);
+
+    const walletA = "550e8400-e29b-41d4-a716-446655440001";
+    const expCat = "550e8400-e29b-41d4-a716-446655440002";
+    const incCat = "550e8400-e29b-41d4-a716-446655440003";
+
+    expect(
+      transactionImportBatchSchema.safeParse({
+        walletId: walletA,
+        defaultExpenseCategoryId: expCat,
+        defaultIncomeCategoryId: incCat,
+        skipDuplicates: true,
+        entries: [
+          {
+            type: "EXPENSE",
+            amount: 45000,
+            occurredAt: "2026-11-20T05:00:00.000Z",
+            note: "Coffee",
+          },
+        ],
+      }).success,
+    ).toBe(true);
+
+    expect(
+      transactionImportBatchSchema.safeParse({
+        walletId: walletA,
+        defaultExpenseCategoryId: expCat,
+        defaultIncomeCategoryId: incCat,
+        entries: [],
       }).success,
     ).toBe(false);
   });

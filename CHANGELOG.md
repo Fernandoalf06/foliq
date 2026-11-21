@@ -4,6 +4,25 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.0] - 2026-11-21
+
+### Added
+
+- **First Stable Production Release (`v1.0.0`):** Completes the full personal finance PWA feature set across iPhone Safari (*Add to Home Screen*) and desktop browsers.
+- **CSV Bank Statement Import Wizard (`src/lib/csv-import.ts`, `POST /api/transactions/import`, `src/components/tabs/csv-import-section.tsx`):**
+  - Upload `.csv` files (up to 2 MB) or paste raw CSV text from Foliq backups and Indonesian/international bank statements (supports comma or semicolon delimiters, RFC-4180 quotes, UTF-8 BOM, Indonesian `Rp 150.000` / `1.250.500,75` and international `$1,250.50` / `(35.25)` amount formats, and `DD/MM/YYYY` / `YYYY-MM-DD` dates).
+  - Auto-detects Date, Amount, Type (`DB`/`CR`/`Expense`/`Income`/signed), Note, and Category columns with manual override controls, a 5-row live preview table, and optional duplicate detection against existing Neon records (capped safely at 500 entries per atomic batch).
+- **Printable Monthly Financial Report / PDF Summary (`/report`, `src/app/report/page.tsx`):**
+  - Server-authenticated monthly financial statement accessible from the desktop sidebar, Ledger toolbar, and Settings Backup panel (`/report?month=YYYY-MM&tzOffset=...`).
+  - Displays Total Net Balance, Monthly Income, Monthly Expenses, Net Cashflow & Savings Rate, Active Wallets (native + primary converted balances), Expense Breakdown by Category, Monthly Budgets & Savings Goals progress, and the full chronological monthly ledger.
+  - Includes dedicated `@media print` paper styling (`14mm` page margins, high-contrast black-on-white print typography regardless of OLED Dark mode, and one-tap **Print / Save as PDF** button).
+- **Expanded Unit Tests:** Added `src/lib/csv-import.test.ts` and expanded `src/lib/validators.test.ts` (29 passing unit tests across 8 suites).
+
+### Changed
+
+- Upgraded Ledger type filter pills to `44px` minimum height and added a quick **PDF** report link alongside **CSV** export.
+- Bumped Service Worker shell cache namespace to `foliq-shell-v1-0-0`.
+
 ## [0.4.1] - 2026-11-21
 
 ### Fixed

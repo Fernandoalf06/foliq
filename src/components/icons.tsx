@@ -301,6 +301,25 @@ export function TrendLineIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+export function UploadIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <path d="M12 15V4M7.5 8.5L12 4l4.5 4.5" />
+      <path d="M4 16.5v1.5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5" />
+    </svg>
+  );
+}
+
+export function PrinterIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+      <path d="M6 9V4h12v5" />
+      <rect x="3" y="9" width="18" height="8" rx="2" />
+      <path d="M7 14h10v6H7z" />
+    </svg>
+  );
+}
+
 export function CategoryGlyph({
   icon,
   className = "h-4 w-4",

@@ -242,3 +242,26 @@ export const exchangeRateUpsertSchema = z
       });
     }
   });
+
+export const transactionImportBatchSchema = z.object({
+  walletId: z.string().uuid("Select a valid active wallet"),
+  defaultExpenseCategoryId: z.string().uuid("Select a default expense category"),
+  defaultIncomeCategoryId: z.string().uuid("Select a default income category"),
+  skipDuplicates: z.boolean().optional().default(true),
+  entries: z
+    .array(
+      z.object({
+        type: z.enum(["EXPENSE", "INCOME"]),
+        amount: z.coerce
+          .number()
+          .finite()
+          .positive("Amount must be greater than 0")
+          .max(999999999999),
+        occurredAt: z.string().datetime({ offset: true }),
+        note: z.string().trim().max(240).optional().default(""),
+        categoryName: z.string().trim().max(40).optional().default(""),
+      }),
+    )
+    .min(1, "Include at least one valid transaction to import")
+    .max(500, "Maximum 500 transactions per CSV import batch"),
+});

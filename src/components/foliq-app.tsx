@@ -7,6 +7,7 @@ import React, {
   useState,
   useSyncExternalStore,
 } from "react";
+import Link from "next/link";
 import {
   BudgetIcon,
   ChevronLeftIcon,
@@ -18,6 +19,7 @@ import {
   MoonIcon,
   OverviewIcon,
   PlusIcon,
+  PrinterIcon,
   SettingsIcon,
   SignOutIcon,
   SunIcon,
@@ -341,6 +343,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
   const monthLabel = formatReadableMonth(month);
   const currency = data?.user.currency ?? "IDR";
   const exportHref = `/api/export?month=${encodeURIComponent(month)}&tzOffset=${encodeURIComponent(String(tzOffset))}`;
+  const reportHref = `/report?month=${encodeURIComponent(month)}&tzOffset=${encodeURIComponent(String(tzOffset))}`;
 
   const primaryDockItems: Array<{
     id: Exclude<ActiveTab, "settings">;
@@ -421,6 +424,13 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
         </nav>
 
         <div className="space-y-2 border-t border-[var(--border)] pt-4">
+          <Link
+            href={reportHref}
+            className="flex h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+          >
+            <PrinterIcon className="h-4 w-4" />
+            <span>{monthLabel} Report (PDF)</span>
+          </Link>
           <a
             href={exportHref}
             className="flex h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
@@ -674,6 +684,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
               currency={currency}
               monthLabel={monthLabel}
               exportHref={exportHref}
+              reportHref={reportHref}
               onOpenQuickEntry={openQuickEntry}
               onEditTransaction={openEditTransaction}
               onDeleteTransaction={handleDeleteTransaction}
@@ -710,9 +721,12 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           {data && activeTab === "settings" && (
             <SettingsTab
               user={data.user}
+              wallets={data.wallets}
+              categories={data.categories}
               exchangeRates={data.exchangeRates}
               monthLabel={monthLabel}
               monthExportHref={exportHref}
+              reportHref={reportHref}
               onRefresh={() => loadDashboard(month)}
               onSignOut={handleSignOut}
             />

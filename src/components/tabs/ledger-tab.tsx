@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { DownloadIcon, PlusIcon } from "../icons";
+import Link from "next/link";
+import { DownloadIcon, PlusIcon, PrinterIcon } from "../icons";
 import { TransactionRow } from "../transaction-row";
 import type {
   DashboardPayload,
@@ -14,6 +15,7 @@ interface LedgerTabProps {
   currency: string;
   monthLabel: string;
   exportHref: string;
+  reportHref: string;
   onOpenQuickEntry: (type: TransactionType) => void;
   onEditTransaction: (tx: TransactionItem) => void;
   onDeleteTransaction: (id: string) => Promise<void>;
@@ -41,6 +43,7 @@ export function LedgerTab({
   currency,
   monthLabel,
   exportHref,
+  reportHref,
   onOpenQuickEntry,
   onEditTransaction,
   onDeleteTransaction,
@@ -141,14 +144,21 @@ export function LedgerTab({
             </select>
           </div>
 
-          <div className="sm:col-span-3">
+          <div className="flex gap-2 sm:col-span-3">
             <a
               href={exportHref}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--surface-2)]"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-2.5 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--surface-2)]"
             >
-              <DownloadIcon className="h-4 w-4" />
-              <span>Export CSV</span>
+              <DownloadIcon className="h-4 w-4 shrink-0" />
+              <span>CSV</span>
             </a>
+            <Link
+              href={reportHref}
+              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-2.5 text-xs font-semibold text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent-text)]"
+            >
+              <PrinterIcon className="h-4 w-4 shrink-0" />
+              <span>PDF</span>
+            </Link>
           </div>
         </div>
 
@@ -161,7 +171,7 @@ export function LedgerTab({
                 type="button"
                 onClick={() => setTypeFilter(f)}
                 aria-pressed={active}
-                className={`min-h-10 rounded-xl px-3.5 text-xs font-semibold transition-colors ${
+                className={`min-h-11 rounded-xl px-3.5 text-xs font-semibold transition-colors ${
                   active
                     ? "bg-[var(--accent)] text-white"
                     : "bg-[var(--surface-2)] text-[var(--ink-muted)] hover:text-[var(--ink)]"

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import pkg from "../../../package.json";
 import {
   DownloadIcon,
@@ -8,28 +9,41 @@ import {
   EyeOffIcon,
   LockIcon,
   MoonIcon,
+  PrinterIcon,
   SignOutIcon,
   SunIcon,
 } from "../icons";
 import { useTheme } from "../theme-provider";
+import { CsvImportSection } from "./csv-import-section";
 import { ExchangeRatesSection } from "./exchange-rates-section";
 import { ShortcutsSection } from "./shortcuts-section";
-import type { ExchangeRateItem, UserProfile } from "@/lib/types";
+import type {
+  CategoryItem,
+  ExchangeRateItem,
+  UserProfile,
+  WalletItem,
+} from "@/lib/types";
 
 interface SettingsTabProps {
   user: UserProfile;
+  wallets: WalletItem[];
+  categories: CategoryItem[];
   exchangeRates: ExchangeRateItem[];
   monthLabel: string;
   monthExportHref: string;
+  reportHref: string;
   onRefresh: () => Promise<void>;
   onSignOut: () => Promise<void>;
 }
 
 export function SettingsTab({
   user,
+  wallets,
+  categories,
   exchangeRates,
   monthLabel,
   monthExportHref,
+  reportHref,
   onRefresh,
   onSignOut,
 }: SettingsTabProps) {
@@ -337,6 +351,13 @@ export function SettingsTab({
         onRefresh={onRefresh}
       />
 
+      {/* CSV Bank Statement Import Wizard */}
+      <CsvImportSection
+        wallets={wallets}
+        categories={categories}
+        onRefresh={onRefresh}
+      />
+
       {/* Apple Shortcuts & API Tokens */}
       <ShortcutsSection />
 
@@ -344,11 +365,11 @@ export function SettingsTab({
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <section className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-6">
           <h2 className="text-base font-bold text-[var(--ink)]">
-            Data Backup & CSV Export
+            Data Backup, CSV & Monthly Report
           </h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            Download formula-safe UTF-8 CSV backups of your ledger for offline
-            archiving or spreadsheet analysis.
+            Download formula-safe UTF-8 CSV backups or open a printable monthly
+            financial statement to save as PDF.
           </p>
           <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
             <a
@@ -356,16 +377,23 @@ export function SettingsTab({
               className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
             >
               <DownloadIcon className="h-4 w-4" />
-              <span>Export All History (CSV)</span>
+              <span>Export All (CSV)</span>
             </a>
             <a
               href={monthExportHref}
               className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--accent)]"
             >
               <DownloadIcon className="h-4 w-4" />
-              <span>Export {monthLabel}</span>
+              <span>{monthLabel} CSV</span>
             </a>
           </div>
+          <Link
+            href={reportHref}
+            className="mt-2.5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent-text)]"
+          >
+            <PrinterIcon className="h-4 w-4" />
+            <span>Open {monthLabel} Printable Report (PDF)</span>
+          </Link>
         </section>
 
         <section className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-6">
