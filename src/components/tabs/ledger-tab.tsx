@@ -4,6 +4,9 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { DownloadIcon, PlusIcon, PrinterIcon } from "../icons";
 import { TransactionRow } from "../transaction-row";
+import { convertCurrencyAmount } from "@/lib/currency";
+import { formatCurrency, fromMinorUnits, toMinorUnits } from "@/lib/money";
+import { maskAmount } from "@/lib/preferences";
 import type {
   DashboardPayload,
   TransactionItem,
@@ -53,9 +56,16 @@ export function LedgerTab({
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | TransactionType>("ALL");
   const [walletFilter, setWalletFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [confirmDeleteTxId, setConfirmDeleteTxId] = useState<string | null>(
     null,
   );
+
+  const hasActiveFilter =
+    searchQuery.trim().length > 0 ||
+    typeFilter !== "ALL" ||
+    walletFilter !== "ALL" ||
+    categoryFilter !== "ALL";
 
   const filteredTransactions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -66,6 +76,9 @@ export function LedgerTab({
         tx.wallet.id !== walletFilter &&
         tx.targetWallet?.id !== walletFilter
       ) {
+        return false;
+      }
+      if (categoryFilter !== "ALL" && tx.category?.id !== categoryFilter) {
         return false;
       }
       if (!q) return true;
@@ -79,7 +92,43 @@ export function LedgerTab({
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [data.transactions, searchQuery, typeFilter, walletFilter]);
+  }, [data.transactions, searchQuery, typeFilter, walletFilter, categoryFilter]);
+
+  const filteredSummary = useMemo(() => {
+    const currencies = new Set(
+      filteredTransactions.map((tx) => tx.wallet.currency || currency),
+    );
+    const singleCurrency =
+      currencies.size === 1 ? Array.from(currencies)[0] : currency;
+    const isMultiCurrency = currencies.size > 1;
+
+    let incomeMinor = 0;
+    let expenseMinor = 0;
+
+    for (const tx of filteredTransactions) {
+      if (tx.type === "TRANSFER") continue;
+      const amt = isMultiCurrency
+        ? convertCurrencyAmount(
+            tx.amount,
+            tx.wallet.currency || currency,
+            currency,
+            data.exchangeRates,
+          )
+        : tx.amount;
+      const minor = toMinorUnits(amt);
+      if (tx.type === "INCOME") incomeMinor += minor;
+      if (tx.type === "EXPENSE") expenseMinor += minor;
+    }
+
+    return {
+      count: filteredTransactions.length,
+      displayCurrency: singleCurrency,
+      isMultiCurrency,
+      income: fromMinorUnits(incomeMinor),
+      expense: fromMinorUnits(expenseMinor),
+      net: fromMinorUnits(incomeMinor - expenseMinor),
+    };
+  }, [filteredTransactions, currency, data.exchangeRates]);
 
   const groupedTransactions = useMemo(() => {
     const groups: Array<{
@@ -113,7 +162,7 @@ export function LedgerTab({
     <div className="space-y-4">
       <div className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-          <div className="sm:col-span-5">
+          <div className="sm:col-span-4">
             <label htmlFor="ledger-search" className="sr-only">
               Search notes, categories, or wallets
             </label>
@@ -127,7 +176,7 @@ export function LedgerTab({
             />
           </div>
 
-          <div className="sm:col-span-4">
+          <div className="sm:col-span-3">
             <label htmlFor="ledger-wallet-filter" className="sr-only">
               Filter by wallet
             </label>
@@ -146,17 +195,36 @@ export function LedgerTab({
             </select>
           </div>
 
-          <div className="flex gap-2 sm:col-span-3">
+          <div className="sm:col-span-3">
+            <label htmlFor="ledger-category-filter" className="sr-only">
+              Filter by category
+            </label>
+            <select
+              id="ledger-category-filter"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--ink)]"
+            >
+              <option value="ALL">All categories</option>
+              {data.categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.type === "INCOME" ? "In" : "Exp"})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-2 sm:col-span-2">
             <a
               href={exportHref}
-              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-2.5 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--surface-2)]"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-2 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--surface-2)]"
             >
               <DownloadIcon className="h-4 w-4 shrink-0" />
               <span>CSV</span>
             </a>
             <Link
               href={reportHref}
-              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-2.5 text-xs font-semibold text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent-text)]"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-2 text-xs font-semibold text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent-text)]"
             >
               <PrinterIcon className="h-4 w-4 shrink-0" />
               <span>PDF</span>
@@ -164,32 +232,99 @@ export function LedgerTab({
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {(["ALL", "EXPENSE", "INCOME", "TRANSFER"] as const).map((f) => {
-            const active = typeFilter === f;
-            return (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setTypeFilter(f)}
-                aria-pressed={active}
-                className={`min-h-11 rounded-xl px-3.5 text-xs font-semibold transition-colors ${
-                  active
-                    ? "bg-[var(--accent)] text-white"
-                    : "bg-[var(--surface-2)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                }`}
-              >
-                {f === "ALL"
-                  ? "All"
-                  : f === "EXPENSE"
-                    ? "Expenses"
-                    : f === "INCOME"
-                      ? "Income"
-                      : "Transfers"}
-              </button>
-            );
-          })}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            {(["ALL", "EXPENSE", "INCOME", "TRANSFER"] as const).map((f) => {
+              const active = typeFilter === f;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setTypeFilter(f)}
+                  aria-pressed={active}
+                  className={`min-h-11 rounded-xl px-3.5 text-xs font-semibold transition-colors ${
+                    active
+                      ? "bg-[var(--accent)] text-white"
+                      : "bg-[var(--surface-2)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  {f === "ALL"
+                    ? "All"
+                    : f === "EXPENSE"
+                      ? "Expenses"
+                      : f === "INCOME"
+                        ? "Income"
+                        : "Transfers"}
+                </button>
+              );
+            })}
+          </div>
+
+          {hasActiveFilter && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setTypeFilter("ALL");
+                setWalletFilter("ALL");
+                setCategoryFilter("ALL");
+              }}
+              className="min-h-11 rounded-xl px-2.5 text-xs font-semibold text-[var(--accent-text)] hover:underline"
+            >
+              Reset filters
+            </button>
+          )}
         </div>
+
+        {data.transactions.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[var(--border)] pt-3 text-xs text-[var(--ink-muted)]">
+            <span className="font-semibold text-[var(--ink)]">
+              {filteredSummary.count}{" "}
+              {filteredSummary.count === 1 ? "entry" : "entries"}
+            </span>
+            <span className="tabular-nums">
+              In:{" "}
+              <strong style={{ color: "var(--income)" }}>
+                {maskAmount(
+                  formatCurrency(
+                    filteredSummary.income,
+                    filteredSummary.displayCurrency,
+                    { signed: filteredSummary.income > 0 },
+                  ),
+                  privacyMode,
+                )}
+              </strong>
+            </span>
+            <span className="tabular-nums">
+              Out:{" "}
+              <strong style={{ color: "var(--expense)" }}>
+                {maskAmount(
+                  formatCurrency(
+                    filteredSummary.expense > 0 ? -filteredSummary.expense : 0,
+                    filteredSummary.displayCurrency,
+                  ),
+                  privacyMode,
+                )}
+              </strong>
+            </span>
+            <span className="tabular-nums">
+              Net:{" "}
+              <strong className="text-[var(--ink)]">
+                {maskAmount(
+                  formatCurrency(
+                    filteredSummary.net,
+                    filteredSummary.displayCurrency,
+                    { signed: true },
+                  ),
+                  privacyMode,
+                )}
+              </strong>
+              {filteredSummary.isMultiCurrency
+                ? ` (${filteredSummary.displayCurrency})`
+                : ""}
+            </span>
+          </div>
+        )}
       </div>
 
       {groupedTransactions.length === 0 ? (
@@ -211,6 +346,7 @@ export function LedgerTab({
                 setSearchQuery("");
                 setTypeFilter("ALL");
                 setWalletFilter("ALL");
+                setCategoryFilter("ALL");
               }}
               className="mt-4 inline-flex h-11 items-center rounded-xl border border-[var(--border)] px-4 text-sm font-semibold text-[var(--ink)]"
             >

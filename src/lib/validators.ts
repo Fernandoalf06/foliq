@@ -89,25 +89,40 @@ export const budgetUpsertSchema = z.object({
     .max(999999999999),
 });
 
+export const CATEGORY_ICON_OPTIONS = [
+  "utensils",
+  "car",
+  "receipt",
+  "bag",
+  "heart",
+  "repeat",
+  "home",
+  "tag",
+  "briefcase",
+  "trending",
+  "gift",
+  "wallet",
+] as const;
+
 export const categoryCreateSchema = z.object({
   name: z.string().trim().min(1, "Category name is required").max(32),
   type: z.enum(["EXPENSE", "INCOME"]),
-  icon: z
-    .enum([
-      "utensils",
-      "car",
-      "receipt",
-      "bag",
-      "heart",
-      "repeat",
-      "home",
-      "tag",
-      "briefcase",
-      "trending",
-      "gift",
-      "wallet",
-    ])
-    .default("tag"),
+  icon: z.enum(CATEGORY_ICON_OPTIONS).default("tag"),
+});
+
+export const categoryUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1, "Category name is required").max(32).optional(),
+    icon: z.enum(CATEGORY_ICON_OPTIONS).optional(),
+  })
+  .refine((data) => data.name !== undefined || data.icon !== undefined, {
+    message: "Provide a category name or icon to update",
+  });
+
+export const budgetCopySchema = z.object({
+  targetMonth: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Invalid target month format"),
 });
 
 export const profileUpdateSchema = z.object({

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { CategoryGlyph, TrashIcon } from "../icons";
+import { CategoryGlyph, CopyIcon, TrashIcon } from "../icons";
+import { CategoriesManager } from "./categories-manager";
 import { RecurringSection } from "./recurring-section";
 import { formatCurrency } from "@/lib/money";
 import { maskAmount } from "@/lib/preferences";
@@ -11,6 +12,15 @@ import type {
   RecurringRuleItem,
   WalletItem,
 } from "@/lib/types";
+
+function formatPreviousMonthLabel(monthKey: string): string {
+  const [y, m] = monthKey.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(y, m - 2, 1)));
+}
 
 interface BudgetsTabProps {
   budgets: BudgetItem[];
@@ -45,20 +55,58 @@ export function BudgetsTab({
   const [budgetLimit, setBudgetLimit] = useState("");
   const [budgetSubmitting, setBudgetSubmitting] = useState(false);
   const [budgetFeedback, setBudgetFeedback] = useState<string | null>(null);
+  const [copyingBudgets, setCopyingBudgets] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryType, setNewCategoryType] = useState<"EXPENSE" | "INCOME">(
-    "EXPENSE",
-  );
-  const [categorySubmitting, setCategorySubmitting] = useState(false);
-  const [categoryFeedback, setCategoryFeedback] = useState<string | null>(null);
+  const prevMonthLabel = formatPreviousMonthLabel(month);
 
   const effectiveCategoryId = expenseCategories.some(
     (c) => c.id === selectedCategoryId,
   )
     ? selectedCategoryId
     : (expenseCategories[0]?.id ?? "");
+
+  const handleCopyFromPrevious = async () => {
+    setCopyFeedback(null);
+    setCopyingBudgets(true);
+    try {
+      const res = await fetch("/api/budgets/copy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetMonth: month }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCopyFeedback({
+          type: "error",
+          text: json.error || `No budgets available in ${prevMonthLabel}.`,
+        });
+        setCopyingBudgets(false);
+        return;
+      }
+      const copied = Number(json.copied ?? 0);
+      const skipped = Number(json.skippedExisting ?? 0);
+      setCopyFeedback({
+        type: "success",
+        text:
+          copied > 0
+            ? `Copied ${copied} ${copied === 1 ? "budget" : "budgets"} from ${prevMonthLabel}${skipped > 0 ? ` (${skipped} already set)` : ""}.`
+            : `All budgets from ${prevMonthLabel} are already set in ${monthLabel}.`,
+      });
+      await onRefresh();
+    } catch {
+      setCopyFeedback({
+        type: "error",
+        text: "Network error while copying budgets.",
+      });
+    } finally {
+      setCopyingBudgets(false);
+    }
+  };
 
   const handleSaveBudget = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,36 +141,6 @@ export function BudgetsTab({
   const handleConfirmDeleteBudget = async (id: string) => {
     await onDeleteBudget(id);
     setConfirmDeleteId(null);
-  };
-
-  const handleAddCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCategoryFeedback(null);
-    setCategorySubmitting(true);
-    try {
-      const res = await fetch("/api/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newCategoryName,
-          type: newCategoryType,
-          icon: newCategoryType === "INCOME" ? "briefcase" : "tag",
-        }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setCategoryFeedback(json.error || "Failed to add category.");
-        setCategorySubmitting(false);
-        return;
-      }
-      setNewCategoryName("");
-      setCategoryFeedback("Category created.");
-      await onRefresh();
-    } catch {
-      setCategoryFeedback("Network error while creating category.");
-    } finally {
-      setCategorySubmitting(false);
-    }
   };
 
   const dueCount = recurringRules.filter(
@@ -176,14 +194,46 @@ export function BudgetsTab({
         />
       ) : (
         <>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              Spending Caps for {monthLabel}
+            </p>
+            <button
+              type="button"
+              disabled={copyingBudgets}
+              onClick={() => void handleCopyFromPrevious()}
+              className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3.5 text-xs font-semibold text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent-text)] disabled:opacity-50"
+            >
+              <CopyIcon className="h-3.5 w-3.5" />
+              <span>
+                {copyingBudgets
+                  ? "Copying..."
+                  : `Copy from ${prevMonthLabel}`}
+              </span>
+            </button>
+          </div>
+
+          {copyFeedback && (
+            <div
+              role={copyFeedback.type === "error" ? "alert" : "status"}
+              className={`rounded-xl px-3.5 py-2.5 text-sm font-medium ${
+                copyFeedback.type === "error"
+                  ? "border border-[var(--expense)]/30 bg-[var(--expense-soft)] text-[var(--expense)]"
+                  : "border border-[var(--income)]/30 bg-[var(--income-soft)] text-[var(--income)]"
+              }`}
+            >
+              {copyFeedback.text}
+            </div>
+          )}
+
           {budgets.length === 0 ? (
         <div className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-6">
           <h2 className="text-base font-bold text-[var(--ink)]">
             No category budgets set for {monthLabel}
           </h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            Set a monthly spending cap below to monitor pacing with on-track,
-            near-limit, and over-budget alerts.
+            Set a monthly spending cap below or copy last month&apos;s caps in
+            one tap to monitor pacing.
           </p>
         </div>
       ) : (
@@ -365,62 +415,7 @@ export function BudgetsTab({
           </form>
         </section>
 
-        <section className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-5">
-          <h2 className="text-base font-bold text-[var(--ink)]">
-            Add Custom Category
-          </h2>
-          {categoryFeedback && (
-            <p className="mt-2 text-sm font-medium text-[var(--accent-text)]">
-              {categoryFeedback}
-            </p>
-          )}
-          <form onSubmit={handleAddCategory} className="mt-4 space-y-4">
-            <div>
-              <label
-                htmlFor="category-name"
-                className="mb-1.5 block text-sm font-medium text-[var(--ink)]"
-              >
-                Category Name
-              </label>
-              <input
-                id="category-name"
-                type="text"
-                required
-                maxLength={32}
-                placeholder="Coffee, Gym, Side Project"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)]"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="category-type"
-                className="mb-1.5 block text-sm font-medium text-[var(--ink)]"
-              >
-                Category Type
-              </label>
-              <select
-                id="category-type"
-                value={newCategoryType}
-                onChange={(e) =>
-                  setNewCategoryType(e.target.value as "EXPENSE" | "INCOME")
-                }
-                className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--ink)]"
-              >
-                <option value="EXPENSE">Expense</option>
-                <option value="INCOME">Income</option>
-              </select>
-            </div>
-            <button
-              type="submit"
-              disabled={categorySubmitting}
-              className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--accent)] disabled:opacity-50"
-            >
-              {categorySubmitting ? "Creating..." : "Create Category"}
-            </button>
-          </form>
-        </section>
+        <CategoriesManager categories={categories} onRefresh={onRefresh} />
       </div>
         </>
       )}

@@ -4,6 +4,23 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - 2026-11-21
+
+### Added
+
+- **1-Tap Copy Budgets from Previous Month (`POST /api/budgets/copy`):** Roll over all spending caps from the previous calendar month into the currently viewed month in one tap without overwriting any caps already customized for the current month.
+- **Ledger Category Filter & Dynamic Filtered Subtotal Bar (`src/components/tabs/ledger-tab.tsx`):**
+  - Added a Category dropdown filter alongside Search, Wallet, and Type filters plus a one-tap **Reset filters** action.
+  - Added a live **Filtered Subtotal Summary Bar** showing matching entry count, Income (`In`), Expenses (`Out`), and `Net` totals with automatic multi-currency conversion and Privacy Mode masking.
+- **Custom Category Manager (`PATCH/DELETE /api/categories/[id]`, `src/components/tabs/categories-manager.tsx`):**
+  - View Expense and Income categories, rename or switch icons across all 12 geometric glyphs inline, create custom categories with chosen icons, and remove unused categories with two-step confirmation.
+  - Enforces server-side invariants preventing deletion of the last category per type or any category referenced by a recurring schedule.
+
+### Changed
+
+- Added `.no-scrollbar` utility styling to the Overview **Active Wallets** horizontal quick-strip so narrow desktop and mobile viewports stay visually clean without a bulky native horizontal scrollbar.
+- Expanded `src/lib/validators.test.ts` for `budgetCopySchema` and `categoryUpdateSchema` and bumped Service Worker cache to `foliq-shell-v1-2-0`.
+
 ## [1.1.0] - 2026-11-21
 
 ### Added

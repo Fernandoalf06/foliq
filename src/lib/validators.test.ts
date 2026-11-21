@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   apiTokenCreateSchema,
+  budgetCopySchema,
+  categoryUpdateSchema,
   exchangeRateUpsertSchema,
   passwordChangeSchema,
   profileUpdateSchema,
@@ -219,5 +221,18 @@ describe("validation schemas", () => {
         entries: [],
       }).success,
     ).toBe(false);
+
+    expect(
+      budgetCopySchema.safeParse({ targetMonth: "2026-12" }).success,
+    ).toBe(true);
+    expect(
+      budgetCopySchema.safeParse({ targetMonth: "2026-13" }).success,
+    ).toBe(false);
+
+    expect(
+      categoryUpdateSchema.safeParse({ name: "Coffee & Tea", icon: "utensils" })
+        .success,
+    ).toBe(true);
+    expect(categoryUpdateSchema.safeParse({}).success).toBe(false);
   });
 });

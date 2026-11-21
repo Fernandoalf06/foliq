@@ -6,7 +6,7 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 
 ---
 
-## Key Features (`v1.1.0`)
+## Key Features (`v1.2.0`)
 
 - **Privacy Mode & Daily Speed UX:** One-tap **Hide/Show Balances** toggle in the header and sidebar masks every monetary figure and chart tooltip (`••••••••`), paired with desktop keyboard shortcuts (`N`, `P`, `[`, `]`, `1`-`5`), one-tap **Today** month jump, proportional skeleton loaders, and auto-dismissing floating toasts.
 - **Smart Quick Entry with Inline Calculator & Offline Queue:** Floating Liquid Glass bottom dock with a one-tap `+` action, iOS sheet grabber handle, remembered last-used wallet, CSP-safe inline math calculator (`45000+18000`, `150000/3`), `Clear` chip, inline editing, and automatic local queueing + auto-sync when capturing offline.
@@ -17,7 +17,8 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 - **Printable Monthly Report / PDF Summary (`/report`):** Generate an authenticated, print-optimized monthly financial statement covering KPIs, wallet snapshots, category breakdown, budgets, savings goals, and complete ledger entries ready for iOS/Desktop **Save as PDF**.
 - **Recurring Bills, Subscriptions & Income:** Schedule weekly, monthly, or yearly bills and salary with timezone-aware *Due now* / *Upcoming (7d)* alerts on Overview, atomic one-tap **Record Now** (advancing `nextDueDate` with month-end clamping), and Pause/Resume controls.
 - **Apple Shortcuts Quick Capture API:** Generate revocable `flq_...` Bearer tokens in Settings to trigger instant expense logging from iPhone **Back Tap**, **Action Button**, or **Siri Shortcuts** via `POST /api/shortcuts/record`.
-- **Monthly Category Budgets & Custom Categories:** Set monthly caps per expense category with clear pacing status (*On track*, *Near limit* at >= 80%, and *Over budget*), two-step delete confirmations, and custom category creation.
+- **Monthly Category Budgets, Rollover & Category Manager:** Set monthly caps per expense category with clear pacing status (*On track*, *Near limit* at >= 80%, and *Over budget*), copy caps from the previous month in one tap (`POST /api/budgets/copy`), and create, rename, change icons, or safely delete categories.
+- **Ledger Search, Category Filter & Filtered Subtotals:** Filter entries by keyword, wallet, category, and type with a live subtotal summary bar (`In`, `Out`, `Net`), inline editing, two-step delete, CSV export, and PDF report access.
 - **Crisp Utility + Restrained Liquid Glass UI & Single-Owner Security:** Solid high-contrast matte financial cards in Light and OLED Dark modes paired with frosted Liquid Glass strictly on floating navigation chrome, safely open-sourced while locked exclusively to your configured `OWNER_EMAIL`.
 
 ---
@@ -217,8 +218,8 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 - **v0.4.0:** Multi-currency wallets with saved Neon exchange rates, Savings Goals / Sinking Funds with quick contribute/withdraw progress tracking, and 6M/12M Net Worth & Cashflow trend charts.
 - **v0.4.1:** Refined Liquid Glass floating dock opacity & blur (`26px`) for crisp scrolled-text legibility in Light and Dark OLED modes, and fixed desktop `Wallet Name` placeholder clipping.
 - **v1.0.0:** CSV Bank Statement Import Wizard (RFC-4180 parser, Indonesian/international number & date formats, column mapping, duplicate skipping) and authenticated Printable Monthly Financial Report / PDF Summary (`/report`).
-- **v1.1.0 (Current):** Privacy Mode (Hide/Show Balances across all views and charts), Smart Quick Entry (inline CSP-safe math calculator, remembered last wallet, Clear chip, iOS grabber), Overview Active Wallet quick-strip + MoM & daily average KPIs, Jump to Today, desktop keyboard shortcuts, floating auto-dismiss toast, and skeleton loaders.
-- **v1.2.0 (Planned):** 1-Tap Copy Budgets from Previous Month, Category filter + filtered subtotal bar in Ledger, and Custom Category management (rename, icon, delete).
+- **v1.1.0:** Privacy Mode (Hide/Show Balances across all views and charts), Smart Quick Entry (inline CSP-safe math calculator, remembered last wallet, Clear chip, iOS grabber), Overview Active Wallet quick-strip + MoM & daily average KPIs, Jump to Today, desktop keyboard shortcuts, floating auto-dismiss toast, and skeleton loaders.
+- **v1.2.0 (Current):** 1-Tap Copy Budgets from Previous Month (`POST /api/budgets/copy`), Category filter + dynamic multi-currency Filtered Subtotal bar in Ledger, full Category Manager (rename, 12-icon picker, safe delete with recurring-rule invariant), and sleek `.no-scrollbar` Active Wallets quick-strip.
 
 ---
 
