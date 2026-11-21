@@ -17,12 +17,14 @@ interface CashflowChartProps {
   data: DailySeriesPoint[];
   currency: string;
   monthLabel: string;
+  privacyMode?: boolean;
 }
 
 export function CashflowChart({
   data,
   currency,
   monthLabel,
+  privacyMode = false,
 }: CashflowChartProps) {
   if (data.length === 0) {
     return (
@@ -90,7 +92,9 @@ export function CashflowChart({
               axisLine={false}
               tick={{ fill: "var(--ink-muted)", fontSize: 11 }}
               tickFormatter={(v: number) =>
-                formatCurrency(v, currency, { compact: true })
+                privacyMode
+                  ? "•••"
+                  : formatCurrency(v, currency, { compact: true })
               }
             />
             <Tooltip
@@ -103,7 +107,9 @@ export function CashflowChart({
                 fontSize: "13px",
               }}
               formatter={(value, name) => [
-                formatCurrency(Number(value ?? 0), currency),
+                privacyMode
+                  ? "••••••••"
+                  : formatCurrency(Number(value ?? 0), currency),
                 name === "income" ? "Income" : "Expense",
               ]}
               labelFormatter={(label) => `Day ${label}`}

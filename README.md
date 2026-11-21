@@ -6,19 +6,19 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 
 ---
 
-## Key Features (`v1.0.0` Stable)
+## Key Features (`v1.1.0`)
 
+- **Privacy Mode & Daily Speed UX:** One-tap **Hide/Show Balances** toggle in the header and sidebar masks every monetary figure and chart tooltip (`••••••••`), paired with desktop keyboard shortcuts (`N`, `P`, `[`, `]`, `1`-`5`), one-tap **Today** month jump, proportional skeleton loaders, and auto-dismissing floating toasts.
+- **Smart Quick Entry with Inline Calculator & Offline Queue:** Floating Liquid Glass bottom dock with a one-tap `+` action, iOS sheet grabber handle, remembered last-used wallet, CSP-safe inline math calculator (`45000+18000`, `150000/3`), `Clear` chip, inline editing, and automatic local queueing + auto-sync when capturing offline.
+- **Overview Active Wallet Quick-Strip & MoM Insights:** Glanceable horizontal active-wallet balance strip inside the Total Net Balance hero card, Month-over-Month (`vs prev month`) income/expense deltas, daily average spend, and 6M/12M **Net Worth** & **Cashflow** trend charts.
 - **Multi-Currency Wallets & Saved Exchange Rates:** Assign `IDR`, `USD`, `SGD`, or `EUR` per wallet, save custom conversion rates in Settings, and view native wallet balances alongside live converted totals (`≈`) in your Primary Display Currency.
 - **Savings Goals & Sinking Funds:** Create dedicated savings targets (emergency fund, travel, gadgets) inside **Wallets & Goals** with optional target dates, optional linked wallets, quick `+ Add` / `Withdraw` progress controls, and an Overview progress strip.
-- **6-Month & 12-Month Net Worth & Cashflow Trends:** Analyze multi-month **Net Worth** growth curves and **Income vs. Expense** bar trends across `6M` and `12M` windows directly on Overview.
 - **CSV Bank Statement Import Wizard:** Upload `.csv` bank statements or Foliq backups (comma or semicolon delimited, Indonesian & international number/date formats) with automatic column mapping, live preview, and duplicate skipping (up to 500 rows per batch).
 - **Printable Monthly Report / PDF Summary (`/report`):** Generate an authenticated, print-optimized monthly financial statement covering KPIs, wallet snapshots, category breakdown, budgets, savings goals, and complete ledger entries ready for iOS/Desktop **Save as PDF**.
-- **Quick Entry, Editing & Offline Capture Queue:** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and same-currency **Transfers** with wallet-aware currency presets, live formatted previews, inline editing, and automatic local queueing + auto-sync when capturing offline.
 - **Recurring Bills, Subscriptions & Income:** Schedule weekly, monthly, or yearly bills and salary with timezone-aware *Due now* / *Upcoming (7d)* alerts on Overview, atomic one-tap **Record Now** (advancing `nextDueDate` with month-end clamping), and Pause/Resume controls.
 - **Apple Shortcuts Quick Capture API:** Generate revocable `flq_...` Bearer tokens in Settings to trigger instant expense logging from iPhone **Back Tap**, **Action Button**, or **Siri Shortcuts** via `POST /api/shortcuts/record`.
 - **Monthly Category Budgets & Custom Categories:** Set monthly caps per expense category with clear pacing status (*On track*, *Near limit* at >= 80%, and *Over budget*), two-step delete confirmations, and custom category creation.
-- **Crisp Utility + Restrained Liquid Glass UI:** Solid high-contrast matte financial cards in Light and OLED Dark modes paired with frosted Liquid Glass strictly on floating navigation chrome.
-- **Single-Owner Security Model:** Designed to be safely open-sourced in a public repository while keeping your live deployment locked exclusively to your configured `OWNER_EMAIL`.
+- **Crisp Utility + Restrained Liquid Glass UI & Single-Owner Security:** Solid high-contrast matte financial cards in Light and OLED Dark modes paired with frosted Liquid Glass strictly on floating navigation chrome, safely open-sourced while locked exclusively to your configured `OWNER_EMAIL`.
 
 ---
 
@@ -216,7 +216,9 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 - **v0.3.0:** Recurring transactions (subscriptions, bills & salary with atomic one-tap recording), local offline capture queue with auto-sync on reconnect, and authenticated Apple Shortcuts webhook + revocable `flq_` API tokens.
 - **v0.4.0:** Multi-currency wallets with saved Neon exchange rates, Savings Goals / Sinking Funds with quick contribute/withdraw progress tracking, and 6M/12M Net Worth & Cashflow trend charts.
 - **v0.4.1:** Refined Liquid Glass floating dock opacity & blur (`26px`) for crisp scrolled-text legibility in Light and Dark OLED modes, and fixed desktop `Wallet Name` placeholder clipping.
-- **v1.0.0 (Current Stable Release):** CSV Bank Statement Import Wizard (RFC-4180 parser, Indonesian/international number & date formats, column mapping, duplicate skipping) and authenticated Printable Monthly Financial Report / PDF Summary (`/report`).
+- **v1.0.0:** CSV Bank Statement Import Wizard (RFC-4180 parser, Indonesian/international number & date formats, column mapping, duplicate skipping) and authenticated Printable Monthly Financial Report / PDF Summary (`/report`).
+- **v1.1.0 (Current):** Privacy Mode (Hide/Show Balances across all views and charts), Smart Quick Entry (inline CSP-safe math calculator, remembered last wallet, Clear chip, iOS grabber), Overview Active Wallet quick-strip + MoM & daily average KPIs, Jump to Today, desktop keyboard shortcuts, floating auto-dismiss toast, and skeleton loaders.
+- **v1.2.0 (Planned):** 1-Tap Copy Budgets from Previous Month, Category filter + filtered subtotal bar in Ledger, and Custom Category management (rename, icon, delete).
 
 ---
 

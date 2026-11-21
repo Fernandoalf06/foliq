@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { CategoryGlyph, RepeatIcon, TrashIcon } from "../icons";
 import { formatCurrency } from "@/lib/money";
+import { maskAmount } from "@/lib/preferences";
 import type {
   CategoryItem,
   CategoryType,
@@ -16,6 +17,7 @@ interface RecurringSectionProps {
   wallets: WalletItem[];
   categories: CategoryItem[];
   currency: string;
+  privacyMode?: boolean;
   onRefresh: () => Promise<void>;
   onRecordRule: (id: string) => Promise<void>;
 }
@@ -40,6 +42,7 @@ export function RecurringSection({
   wallets,
   categories,
   currency,
+  privacyMode = false,
   onRefresh,
   onRecordRule,
 }: RecurringSectionProps) {
@@ -268,10 +271,13 @@ export function RecurringSection({
                         color: isIncome ? "var(--income)" : "var(--expense)",
                       }}
                     >
-                      {formatCurrency(
-                        isIncome ? rule.amount : -rule.amount,
-                        currency,
-                        { signed: isIncome },
+                      {maskAmount(
+                        formatCurrency(
+                          isIncome ? rule.amount : -rule.amount,
+                          currency,
+                          { signed: isIncome },
+                        ),
+                        privacyMode,
                       )}
                     </p>
                     <span

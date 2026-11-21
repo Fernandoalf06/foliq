@@ -12,6 +12,7 @@ import {
 import { TransactionRow } from "../transaction-row";
 import { TrendChart } from "../trend-chart";
 import { formatCurrency } from "@/lib/money";
+import { maskAmount } from "@/lib/preferences";
 import type {
   DashboardPayload,
   TransactionItem,
@@ -22,16 +23,29 @@ interface OverviewTabProps {
   data: DashboardPayload;
   currency: string;
   monthLabel: string;
+  privacyMode: boolean;
   onOpenQuickEntry: (type: TransactionType) => void;
   onEditTransaction: (tx: TransactionItem) => void;
   onRecordRecurring: (id: string) => Promise<void>;
   onNavigateTab: (tab: "ledger" | "budgets" | "wallets") => void;
 }
 
+function computeElapsedDaysInMonth(monthKey: string): number {
+  const [y, m] = monthKey.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const now = new Date();
+  const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  if (monthKey === currentKey) {
+    return Math.max(1, now.getDate());
+  }
+  return Math.max(1, daysInMonth);
+}
+
 export function OverviewTab({
   data,
   currency,
   monthLabel,
+  privacyMode,
   onOpenQuickEntry,
   onEditTransaction,
   onRecordRecurring,
@@ -42,6 +56,41 @@ export function OverviewTab({
     (r) =>
       r.isActive && (r.dueStatus === "due" || r.dueStatus === "upcoming"),
   );
+
+  const prevMonthPoint =
+    data.monthlyTrend.length >= 2
+      ? data.monthlyTrend[data.monthlyTrend.length - 2]
+      : null;
+
+  const incomeMomPct =
+    prevMonthPoint && prevMonthPoint.income > 0
+      ? Math.round(
+          ((data.cashflow.income - prevMonthPoint.income) /
+            prevMonthPoint.income) *
+            100,
+        )
+      : null;
+
+  const expenseMomPct =
+    prevMonthPoint && prevMonthPoint.expense > 0
+      ? Math.round(
+          ((data.cashflow.expense - prevMonthPoint.expense) /
+            prevMonthPoint.expense) *
+            100,
+        )
+      : null;
+
+  const elapsedDays = computeElapsedDaysInMonth(data.month);
+  const dailyAvgExpense =
+    data.cashflow.expense > 0
+      ? Math.round((data.cashflow.expense / elapsedDays) * 100) / 100
+      : 0;
+
+  const fmt = (
+    val: number,
+    curr = currency,
+    opts?: { signed?: boolean; compact?: boolean },
+  ) => maskAmount(formatCurrency(val, curr, opts), privacyMode);
 
   const handleRecord = async (id: string) => {
     setRecordingId(id);
@@ -56,7 +105,7 @@ export function OverviewTab({
             Total Net Balance
           </p>
           <p className="tabular-nums mt-2 break-words text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-4xl">
-            {formatCurrency(data.netWorth, currency)}
+            {fmt(data.netWorth)}
           </p>
           <p className="mt-2 text-xs text-[var(--ink-muted)]">
             Across {data.wallets.length} active{" "}
@@ -88,6 +137,40 @@ export function OverviewTab({
               <span>Transfer</span>
             </button>
           </div>
+
+          {data.wallets.length > 0 && (
+            <div className="mt-5 border-t border-[var(--border)] pt-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                  Active Wallets
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab("wallets")}
+                  className="text-xs font-semibold text-[var(--accent-text)] hover:underline"
+                >
+                  Manage
+                </button>
+              </div>
+              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                {data.wallets.map((w) => (
+                  <button
+                    key={w.id}
+                    type="button"
+                    onClick={() => onNavigateTab("wallets")}
+                    className="flex min-h-11 shrink-0 flex-col items-start rounded-xl border border-[var(--border)] bg-[var(--surface-2)]/70 px-3 py-2 text-left transition-colors hover:border-[var(--accent)]"
+                  >
+                    <span className="text-[11px] font-medium text-[var(--ink-muted)]">
+                      {w.name}
+                    </span>
+                    <span className="tabular-nums mt-0.5 text-xs font-bold text-[var(--ink)]">
+                      {fmt(w.balance, w.currency)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:col-span-5 md:grid-cols-1">
@@ -99,10 +182,28 @@ export function OverviewTab({
               className="tabular-nums mt-1.5 break-words text-xl font-bold sm:text-2xl"
               style={{ color: "var(--income)" }}
             >
-              {formatCurrency(data.cashflow.income, currency, {
+              {fmt(data.cashflow.income, currency, {
                 signed: data.cashflow.income > 0,
               })}
             </p>
+            {incomeMomPct !== null && prevMonthPoint ? (
+              <p className="tabular-nums mt-1.5 text-xs text-[var(--ink-muted)]">
+                <span
+                  className="font-semibold"
+                  style={{
+                    color:
+                      incomeMomPct >= 0 ? "var(--income)" : "var(--expense)",
+                  }}
+                >
+                  {incomeMomPct >= 0 ? `+${incomeMomPct}%` : `${incomeMomPct}%`}
+                </span>{" "}
+                vs {prevMonthPoint.label}
+              </p>
+            ) : (
+              <p className="mt-1.5 text-xs text-[var(--ink-muted)]">
+                Monthly inflow total
+              </p>
+            )}
           </div>
 
           <div className="min-w-0 rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">
@@ -113,18 +214,40 @@ export function OverviewTab({
               className="tabular-nums mt-1.5 break-words text-xl font-bold sm:text-2xl"
               style={{ color: "var(--expense)" }}
             >
-              {formatCurrency(
-                data.cashflow.expense > 0 ? -data.cashflow.expense : 0,
-                currency,
-              )}
+              {fmt(data.cashflow.expense > 0 ? -data.cashflow.expense : 0)}
             </p>
-            {data.cashflow.income > 0 && (
-              <p className="tabular-nums mt-1 text-xs text-[var(--ink-muted)]">
-                Net{" "}
-                {formatCurrency(data.cashflow.net, currency, { signed: true })}{" "}
-                ({data.cashflow.savingsRate}% saved)
-              </p>
-            )}
+            <div className="tabular-nums mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-[var(--ink-muted)]">
+              {expenseMomPct !== null && prevMonthPoint && (
+                <span>
+                  <span
+                    className="font-semibold"
+                    style={{
+                      color:
+                        expenseMomPct <= 0 ? "var(--income)" : "var(--expense)",
+                    }}
+                  >
+                    {expenseMomPct >= 0
+                      ? `+${expenseMomPct}%`
+                      : `${expenseMomPct}%`}
+                  </span>{" "}
+                  vs {prevMonthPoint.label}
+                </span>
+              )}
+              {dailyAvgExpense > 0 && (
+                <span>Avg {fmt(dailyAvgExpense)}/day</span>
+              )}
+              {data.cashflow.income > 0 && (
+                <span>
+                  Net {fmt(data.cashflow.net, currency, { signed: true })} (
+                  {data.cashflow.savingsRate}% saved)
+                </span>
+              )}
+              {expenseMomPct === null &&
+                dailyAvgExpense === 0 &&
+                data.cashflow.income === 0 && (
+                  <span>Daily average updates as you log</span>
+                )}
+            </div>
           </div>
         </div>
       </section>
@@ -178,11 +301,9 @@ export function OverviewTab({
                         color: isIncome ? "var(--income)" : "var(--expense)",
                       }}
                     >
-                      {formatCurrency(
-                        isIncome ? rule.amount : -rule.amount,
-                        currency,
-                        { signed: isIncome },
-                      )}
+                      {fmt(isIncome ? rule.amount : -rule.amount, currency, {
+                        signed: isIncome,
+                      })}
                     </span>
                     <button
                       type="button"
@@ -204,10 +325,15 @@ export function OverviewTab({
         data={data.dailySeries}
         currency={currency}
         monthLabel={monthLabel}
+        privacyMode={privacyMode}
       />
 
       {data.monthlyTrend.length > 0 && (
-        <TrendChart data={data.monthlyTrend} currency={currency} />
+        <TrendChart
+          data={data.monthlyTrend}
+          currency={currency}
+          privacyMode={privacyMode}
+        />
       )}
 
       {data.savingsGoals.length > 0 && (
@@ -251,8 +377,8 @@ export function OverviewTab({
                   />
                 </div>
                 <p className="tabular-nums mt-2 text-xs text-[var(--ink-muted)]">
-                  {formatCurrency(goal.currentAmount, goal.currency)} /{" "}
-                  {formatCurrency(goal.targetAmount, goal.currency)}
+                  {fmt(goal.currentAmount, goal.currency)} /{" "}
+                  {fmt(goal.targetAmount, goal.currency)}
                 </p>
               </div>
             ))}
@@ -300,6 +426,7 @@ export function OverviewTab({
                   key={tx.id}
                   tx={tx}
                   currency={currency}
+                  privacyMode={privacyMode}
                   allowActions
                   onEdit={onEditTransaction}
                 />
@@ -345,7 +472,7 @@ export function OverviewTab({
                         <span className="truncate">{item.name}</span>
                       </span>
                       <span className="tabular-nums shrink-0 font-semibold text-[var(--ink)]">
-                        {formatCurrency(item.total, currency)} ({share}%)
+                        {fmt(item.total)} ({share}%)
                       </span>
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-2)]">

@@ -5,6 +5,7 @@ import { EditIcon, RestoreIcon, TrashIcon } from "../icons";
 import { GoalsSection } from "./goals-section";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatCurrency } from "@/lib/money";
+import { maskAmount } from "@/lib/preferences";
 import type { SavingsGoalItem, WalletItem, WalletType } from "@/lib/types";
 
 interface WalletsTabProps {
@@ -12,6 +13,7 @@ interface WalletsTabProps {
   archivedWallets: WalletItem[];
   savingsGoals: SavingsGoalItem[];
   currency: string;
+  privacyMode: boolean;
   onRefresh: () => Promise<void>;
   onRemoveWallet: (id: string) => Promise<void>;
   onRestoreWallet: (id: string) => Promise<void>;
@@ -22,6 +24,7 @@ export function WalletsTab({
   archivedWallets,
   savingsGoals,
   currency,
+  privacyMode,
   onRefresh,
   onRemoveWallet,
   onRestoreWallet,
@@ -161,6 +164,7 @@ export function WalletsTab({
           goals={savingsGoals}
           wallets={wallets}
           currency={currency}
+          privacyMode={privacyMode}
           onRefresh={onRefresh}
         />
       ) : (
@@ -352,16 +356,24 @@ export function WalletsTab({
                   {w.name}
                 </h2>
                 <p className="tabular-nums mt-1.5 break-words text-2xl font-bold text-[var(--ink)]">
-                  {formatCurrency(w.balance, w.currency)}
+                  {maskAmount(formatCurrency(w.balance, w.currency), privacyMode)}
                 </p>
                 {w.currency !== currency && (
                   <p className="tabular-nums mt-1 text-xs font-medium text-[var(--accent-text)]">
-                    ≈ {formatCurrency(w.balanceInPrimary, currency)}
+                    ≈{" "}
+                    {maskAmount(
+                      formatCurrency(w.balanceInPrimary, currency),
+                      privacyMode,
+                    )}
                   </p>
                 )}
               </div>
               <p className="tabular-nums mt-4 text-xs text-[var(--ink-muted)]">
-                Opening balance: {formatCurrency(w.initialBalance, w.currency)}
+                Opening balance:{" "}
+                {maskAmount(
+                  formatCurrency(w.initialBalance, w.currency),
+                  privacyMode,
+                )}
               </p>
             </div>
           );

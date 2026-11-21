@@ -3,11 +3,13 @@
 import React from "react";
 import { CategoryGlyph, EditIcon, TransferIcon, TrashIcon } from "./icons";
 import { formatCurrency } from "@/lib/money";
+import { maskAmount } from "@/lib/preferences";
 import type { TransactionItem } from "@/lib/types";
 
 interface TransactionRowProps {
   tx: TransactionItem;
   currency: string;
+  privacyMode?: boolean;
   allowActions?: boolean;
   isConfirmingDelete?: boolean;
   onEdit?: (tx: TransactionItem) => void;
@@ -19,6 +21,7 @@ interface TransactionRowProps {
 export function TransactionRow({
   tx,
   currency,
+  privacyMode = false,
   allowActions = false,
   isConfirmingDelete = false,
   onEdit,
@@ -38,11 +41,12 @@ export function TransactionRow({
       : tx.wallet.name;
 
   const txCurrency = tx.wallet.currency || currency;
-  const amountText = isTransfer
+  const rawAmountText = isTransfer
     ? formatCurrency(tx.amount, txCurrency)
     : formatCurrency(isIncome ? tx.amount : -tx.amount, txCurrency, {
         signed: true,
       });
+  const amountText = maskAmount(rawAmountText, privacyMode);
 
   return (
     <li className="flex items-center justify-between gap-2 py-3.5 first:pt-1 last:pb-1 sm:gap-3">

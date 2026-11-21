@@ -14,6 +14,7 @@ interface LedgerTabProps {
   data: DashboardPayload;
   currency: string;
   monthLabel: string;
+  privacyMode: boolean;
   exportHref: string;
   reportHref: string;
   onOpenQuickEntry: (type: TransactionType) => void;
@@ -42,6 +43,7 @@ export function LedgerTab({
   data,
   currency,
   monthLabel,
+  privacyMode,
   exportHref,
   reportHref,
   onOpenQuickEntry,
@@ -241,6 +243,7 @@ export function LedgerTab({
                     key={tx.id}
                     tx={tx}
                     currency={currency}
+                    privacyMode={privacyMode}
                     allowActions
                     isConfirmingDelete={confirmDeleteTxId === tx.id}
                     onEdit={onEditTransaction}

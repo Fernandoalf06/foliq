@@ -14,6 +14,8 @@ import {
   ChevronRightIcon,
   CloudOffIcon,
   DownloadIcon,
+  EyeIcon,
+  EyeOffIcon,
   FoliqMark,
   LedgerIcon,
   MoonIcon,
@@ -41,6 +43,12 @@ import {
   removeOfflineTransaction,
   subscribeOfflineQueue,
 } from "@/lib/offline-queue";
+import {
+  getPrivacyServerSnapshot,
+  getPrivacySnapshot,
+  setPrivacyMode,
+  subscribePrivacy,
+} from "@/lib/preferences";
 import type {
   DashboardPayload,
   TransactionItem,
@@ -72,6 +80,7 @@ function formatReadableMonth(monthKey: string): string {
 export function FoliqApp({ onSignedOut }: FoliqAppProps) {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
+  const [currentMonth] = useState(() => formatMonthKey(new Date()));
   const [month, setMonth] = useState(() => formatMonthKey(new Date()));
   const [tzOffset] = useState(() => new Date().getTimezoneOffset());
   const [data, setData] = useState<DashboardPayload | null>(null);
@@ -79,6 +88,15 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
+
+  const privacyMode = useSyncExternalStore(
+    subscribePrivacy,
+    getPrivacySnapshot,
+    getPrivacyServerSnapshot,
+  );
+  const togglePrivacy = useCallback(() => {
+    setPrivacyMode(!privacyMode);
+  }, [privacyMode]);
 
   const pendingQueue = useSyncExternalStore(
     subscribeOfflineQueue,
@@ -157,6 +175,59 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
       active = false;
     };
   }, [month, fetchDashboardData]);
+
+  useEffect(() => {
+    if (!statusNotice) return;
+    const timer = window.setTimeout(() => {
+      setStatusNotice(null);
+    }, 3500);
+    return () => window.clearTimeout(timer);
+  }, [statusNotice]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (sheetOpen || e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      if (key === "n") {
+        e.preventDefault();
+        setEditingTransaction(null);
+        setSheetInitialType("EXPENSE");
+        setSheetOpen(true);
+      } else if (key === "p") {
+        e.preventDefault();
+        togglePrivacy();
+      } else if (e.key === "[") {
+        e.preventDefault();
+        setMonth((m) => shiftMonth(m, -1));
+      } else if (e.key === "]") {
+        e.preventDefault();
+        setMonth((m) => shiftMonth(m, 1));
+      } else if (e.key === "1") {
+        setActiveTab("overview");
+      } else if (e.key === "2") {
+        setActiveTab("ledger");
+      } else if (e.key === "3") {
+        setActiveTab("wallets");
+      } else if (e.key === "4") {
+        setActiveTab("budgets");
+      } else if (e.key === "5") {
+        setActiveTab("settings");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [sheetOpen, togglePrivacy]);
 
   const openQuickEntry = (initialType: TransactionType = "EXPENSE") => {
     setEditingTransaction(null);
@@ -440,6 +511,19 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           </a>
           <button
             type="button"
+            onClick={togglePrivacy}
+            aria-pressed={privacyMode}
+            className="flex h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+          >
+            {privacyMode ? (
+              <EyeIcon className="h-4 w-4" />
+            ) : (
+              <EyeOffIcon className="h-4 w-4" />
+            )}
+            <span>{privacyMode ? "Show Balances" : "Hide Balances"}</span>
+          </button>
+          <button
+            type="button"
             onClick={toggleTheme}
             className="flex h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
           >
@@ -467,7 +551,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
             <div className="flex shrink-0 items-center gap-2 lg:hidden">
               <FoliqMark className="h-7 w-7" />
-              <span className="hidden text-base font-bold tracking-tight text-[var(--ink)] min-[360px]:inline">
+              <span className="hidden text-base font-bold tracking-tight text-[var(--ink)] min-[420px]:inline">
                 Foliq
               </span>
             </div>
@@ -478,29 +562,74 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
               </h1>
             </div>
 
-            <div className="flex min-w-0 items-center gap-0.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-0.5 sm:gap-1 sm:p-1">
-              <button
-                type="button"
-                onClick={() => setMonth((m) => shiftMonth(m, -1))}
-                aria-label="Previous month"
-                className="inline-flex h-11 w-10 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] sm:w-11"
-              >
-                <ChevronLeftIcon className="h-4 w-4" />
-              </button>
-              <span className="tabular-nums min-w-[66px] px-0.5 text-center text-xs font-semibold text-[var(--ink)] sm:min-w-[84px] sm:px-1 sm:text-sm">
-                {monthLabel}
-              </span>
-              <button
-                type="button"
-                onClick={() => setMonth((m) => shiftMonth(m, 1))}
-                aria-label="Next month"
-                className="inline-flex h-11 w-10 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] sm:w-11"
-              >
-                <ChevronRightIcon className="h-4 w-4" />
-              </button>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <div className="flex min-w-0 items-center gap-0.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-0.5 sm:gap-1 sm:p-1">
+                <button
+                  type="button"
+                  onClick={() => setMonth((m) => shiftMonth(m, -1))}
+                  aria-label="Previous month"
+                  className="inline-flex h-11 w-10 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] sm:w-11"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </button>
+                {month !== currentMonth ? (
+                  <button
+                    type="button"
+                    onClick={() => setMonth(currentMonth)}
+                    title="Jump to current month"
+                    aria-label={`${monthLabel}. Tap to return to current month`}
+                    className="tabular-nums inline-flex h-11 min-w-[66px] items-center justify-center gap-1.5 rounded-lg px-1.5 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--surface-2)] sm:min-w-[84px] sm:text-sm"
+                  >
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"
+                      aria-hidden="true"
+                    />
+                    <span>{monthLabel}</span>
+                  </button>
+                ) : (
+                  <span className="tabular-nums min-w-[66px] px-1 text-center text-xs font-semibold text-[var(--ink)] sm:min-w-[84px] sm:text-sm">
+                    {monthLabel}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setMonth((m) => shiftMonth(m, 1))}
+                  aria-label="Next month"
+                  className="inline-flex h-11 w-10 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)] sm:w-11"
+                >
+                  <ChevronRightIcon className="h-4 w-4" />
+                </button>
+              </div>
+
+              {month !== currentMonth && (
+                <button
+                  type="button"
+                  onClick={() => setMonth(currentMonth)}
+                  className="hidden h-11 items-center rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-soft)] px-3 text-xs font-semibold text-[var(--accent-text)] hover:border-[var(--accent)] sm:inline-flex"
+                >
+                  Today
+                </button>
+              )}
             </div>
 
-            <div className="flex shrink-0 items-center gap-1.5 lg:hidden">
+            <div className="flex shrink-0 items-center gap-1 lg:hidden">
+              <button
+                type="button"
+                onClick={togglePrivacy}
+                aria-label={privacyMode ? "Show balances" : "Hide balances"}
+                aria-pressed={privacyMode}
+                className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${
+                  privacyMode
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-text)]"
+                    : "border-[var(--border)] bg-[var(--surface-1)] text-[var(--ink)] hover:bg-[var(--surface-2)]"
+                }`}
+              >
+                {privacyMode ? (
+                  <EyeIcon className="h-4 w-4" />
+                ) : (
+                  <EyeOffIcon className="h-4 w-4" />
+                )}
+              </button>
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -601,22 +730,6 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
             </div>
           )}
 
-          {statusNotice && (
-            <div
-              role="status"
-              className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[var(--income)]/30 bg-[var(--income-soft)] px-4 py-3 text-sm font-medium text-[var(--income)]"
-            >
-              <span>{statusNotice}</span>
-              <button
-                type="button"
-                onClick={() => setStatusNotice(null)}
-                className="min-h-9 rounded-lg px-2 text-xs font-semibold underline"
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
-
           {actionError && (
             <div
               role="alert"
@@ -626,7 +739,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
               <button
                 type="button"
                 onClick={() => setActionError(null)}
-                className="min-h-9 rounded-lg px-2 text-xs font-semibold underline"
+                className="min-h-11 rounded-lg px-2 text-xs font-semibold underline"
               >
                 Dismiss
               </button>
@@ -636,14 +749,31 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           {loading && !data && (
             <div
               role="status"
-              className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-8 text-center"
+              aria-label={`Loading ledger for ${monthLabel}`}
+              className="space-y-5 animate-pulse"
             >
-              <p className="text-sm font-semibold text-[var(--ink)]">
-                Loading your ledger for {monthLabel}...
-              </p>
-              <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                Syncing wallets, transactions, and category budgets from Neon.
-              </p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                <div className="h-52 rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-6 md:col-span-7">
+                  <div className="h-3 w-28 rounded bg-[var(--surface-2)]" />
+                  <div className="mt-4 h-9 w-56 rounded-lg bg-[var(--surface-2)]" />
+                  <div className="mt-3 h-3 w-36 rounded bg-[var(--surface-2)]" />
+                  <div className="mt-6 flex gap-2.5">
+                    <div className="h-11 w-32 rounded-xl bg-[var(--surface-2)]" />
+                    <div className="h-11 w-32 rounded-xl bg-[var(--surface-2)]" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:col-span-5 md:grid-cols-1">
+                  <div className="h-24 rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-5">
+                    <div className="h-3 w-24 rounded bg-[var(--surface-2)]" />
+                    <div className="mt-3 h-7 w-36 rounded bg-[var(--surface-2)]" />
+                  </div>
+                  <div className="h-24 rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-5">
+                    <div className="h-3 w-24 rounded bg-[var(--surface-2)]" />
+                    <div className="mt-3 h-7 w-36 rounded bg-[var(--surface-2)]" />
+                  </div>
+                </div>
+              </div>
+              <div className="h-64 rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-5" />
             </div>
           )}
 
@@ -666,73 +796,109 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
             </div>
           )}
 
-          {data && activeTab === "overview" && (
-            <OverviewTab
-              data={data}
-              currency={currency}
-              monthLabel={monthLabel}
-              onOpenQuickEntry={openQuickEntry}
-              onEditTransaction={openEditTransaction}
-              onRecordRecurring={handleRecordRecurring}
-              onNavigateTab={setActiveTab}
-            />
-          )}
+          <div
+            className={
+              data && data.month !== month
+                ? "opacity-70 transition-opacity duration-150"
+                : "transition-opacity duration-150"
+            }
+          >
+            {data && activeTab === "overview" && (
+              <OverviewTab
+                data={data}
+                currency={currency}
+                monthLabel={monthLabel}
+                privacyMode={privacyMode}
+                onOpenQuickEntry={openQuickEntry}
+                onEditTransaction={openEditTransaction}
+                onRecordRecurring={handleRecordRecurring}
+                onNavigateTab={setActiveTab}
+              />
+            )}
 
-          {data && activeTab === "ledger" && (
-            <LedgerTab
-              data={data}
-              currency={currency}
-              monthLabel={monthLabel}
-              exportHref={exportHref}
-              reportHref={reportHref}
-              onOpenQuickEntry={openQuickEntry}
-              onEditTransaction={openEditTransaction}
-              onDeleteTransaction={handleDeleteTransaction}
-            />
-          )}
+            {data && activeTab === "ledger" && (
+              <LedgerTab
+                data={data}
+                currency={currency}
+                monthLabel={monthLabel}
+                privacyMode={privacyMode}
+                exportHref={exportHref}
+                reportHref={reportHref}
+                onOpenQuickEntry={openQuickEntry}
+                onEditTransaction={openEditTransaction}
+                onDeleteTransaction={handleDeleteTransaction}
+              />
+            )}
 
-          {data && activeTab === "wallets" && (
-            <WalletsTab
-              wallets={data.wallets}
-              archivedWallets={data.archivedWallets}
-              savingsGoals={data.savingsGoals}
-              currency={currency}
-              onRefresh={() => loadDashboard(month)}
-              onRemoveWallet={handleRemoveWallet}
-              onRestoreWallet={handleRestoreWallet}
-            />
-          )}
+            {data && activeTab === "wallets" && (
+              <WalletsTab
+                wallets={data.wallets}
+                archivedWallets={data.archivedWallets}
+                savingsGoals={data.savingsGoals}
+                currency={currency}
+                privacyMode={privacyMode}
+                onRefresh={() => loadDashboard(month)}
+                onRemoveWallet={handleRemoveWallet}
+                onRestoreWallet={handleRestoreWallet}
+              />
+            )}
 
-          {data && activeTab === "budgets" && (
-            <BudgetsTab
-              budgets={data.budgets}
-              recurringRules={data.recurringRules}
-              wallets={data.wallets}
-              categories={data.categories}
-              month={month}
-              monthLabel={monthLabel}
-              currency={currency}
-              onRefresh={() => loadDashboard(month)}
-              onDeleteBudget={handleDeleteBudget}
-              onRecordRecurring={handleRecordRecurring}
-            />
-          )}
+            {data && activeTab === "budgets" && (
+              <BudgetsTab
+                budgets={data.budgets}
+                recurringRules={data.recurringRules}
+                wallets={data.wallets}
+                categories={data.categories}
+                month={month}
+                monthLabel={monthLabel}
+                currency={currency}
+                privacyMode={privacyMode}
+                onRefresh={() => loadDashboard(month)}
+                onDeleteBudget={handleDeleteBudget}
+                onRecordRecurring={handleRecordRecurring}
+              />
+            )}
 
-          {data && activeTab === "settings" && (
-            <SettingsTab
-              user={data.user}
-              wallets={data.wallets}
-              categories={data.categories}
-              exchangeRates={data.exchangeRates}
-              monthLabel={monthLabel}
-              monthExportHref={exportHref}
-              reportHref={reportHref}
-              onRefresh={() => loadDashboard(month)}
-              onSignOut={handleSignOut}
-            />
-          )}
+            {data && activeTab === "settings" && (
+              <SettingsTab
+                user={data.user}
+                wallets={data.wallets}
+                categories={data.categories}
+                exchangeRates={data.exchangeRates}
+                monthLabel={monthLabel}
+                monthExportHref={exportHref}
+                reportHref={reportHref}
+                onRefresh={() => loadDashboard(month)}
+                onSignOut={handleSignOut}
+              />
+            )}
+          </div>
         </main>
       </div>
+
+      {/* Floating Auto-Dismiss Toast */}
+      {statusNotice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-24 left-4 right-4 z-50 mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl border border-[var(--income)]/40 bg-[var(--surface-1)] px-4 py-3 text-sm font-medium text-[var(--ink)] shadow-lg lg:bottom-6 lg:left-auto lg:right-6 lg:mx-0"
+        >
+          <span className="flex items-center gap-2">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-[var(--income)]"
+              aria-hidden="true"
+            />
+            <span>{statusNotice}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setStatusNotice(null)}
+            className="min-h-11 shrink-0 rounded-lg px-2 text-xs font-semibold text-[var(--accent-text)] hover:underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Mobile & Tablet Floating Liquid Glass Dock (< 1024px) */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 safe-bottom lg:hidden">

@@ -4,6 +4,33 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] - 2026-11-21
+
+### Added
+
+- **Privacy Mode (Hide/Show Balances):** Added a hydration-safe (`useSyncExternalStore`) Privacy Mode toggle in both the desktop sidebar and mobile header (`localStorage`-persisted) that masks all sensitive monetary figures (`••••••••`) across Overview, Wallet cards, Ledger rows, Budgets, Recurring schedules, Savings Goals, and Recharts axes/tooltips.
+- **Smart Quick Entry Speed Upgrades:**
+  - **Safe Inline Calculator (`src/lib/math-input.ts`):** Type arithmetic expressions like `45000+18000` or `150000/3` directly into the Quick Entry amount field using a CSP-safe recursive-descent parser (no `eval()`) with live formatted `= Rp ...` preview.
+  - **Remember Last Wallet:** New Quick Entry transactions automatically pre-select your most recently used active wallet (`foliq_last_wallet_v1`).
+  - **Quick Clear & iOS Grabber Pill:** Added a one-tap `Clear` button alongside `44px` amount preset chips and a subtle iOS grabber handle on mobile sheets.
+- **Overview Active Wallet Quick-Strip & MoM Insights:**
+  - Added a horizontal scrollable **Active Wallets** quick-strip directly inside the Total Net Balance hero card so balances across all wallets are visible at a glance.
+  - Added Month-over-Month (`vs <prev month>`) percentage deltas on the Income and Expenses KPI cards plus daily average spending (`Avg .../day`).
+- **Jump to Today, Desktop Keyboard Shortcuts & Floating Toast:**
+  - Added one-tap return to the current month (tapping the active month pill or desktop `Today` button) when browsing past or future months.
+  - Added desktop keyboard shortcuts (`N` Quick Entry, `P` Privacy Mode, `[` / `]` switch month, `1`-`5` switch tabs) automatically suppressed inside form inputs or dialogs.
+  - Upgraded success notifications to an auto-dismissing (`3.5s`) floating toast with zero layout shift, and replaced initial text loading with a proportional Overview skeleton loader + subtle month-switch transition.
+- **Expanded Unit Tests:** Added `src/lib/math-input.test.ts` covering arithmetic precedence, parentheses, unicode operators, division-by-zero rejection, and malformed input guards (32 passing tests across 9 suites).
+
+### Fixed
+
+- Fixed duplicated `| Foliq` `<title>` suffix on `/report` (`Monthly Financial Report`).
+- Upgraded two-step Budget delete confirmation buttons to `44px` minimum height (`min-h-11`).
+
+### Changed
+
+- Bumped Service Worker shell cache namespace to `foliq-shell-v1-1-0`.
+
 ## [1.0.0] - 2026-11-21
 
 ### Added

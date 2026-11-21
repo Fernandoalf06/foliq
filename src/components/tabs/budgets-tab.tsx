@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { CategoryGlyph, TrashIcon } from "../icons";
 import { RecurringSection } from "./recurring-section";
 import { formatCurrency } from "@/lib/money";
+import { maskAmount } from "@/lib/preferences";
 import type {
   BudgetItem,
   CategoryItem,
@@ -19,6 +20,7 @@ interface BudgetsTabProps {
   month: string;
   monthLabel: string;
   currency: string;
+  privacyMode: boolean;
   onRefresh: () => Promise<void>;
   onDeleteBudget: (id: string) => Promise<void>;
   onRecordRecurring: (id: string) => Promise<void>;
@@ -32,6 +34,7 @@ export function BudgetsTab({
   month,
   monthLabel,
   currency,
+  privacyMode,
   onRefresh,
   onDeleteBudget,
   onRecordRecurring,
@@ -167,6 +170,7 @@ export function BudgetsTab({
           wallets={wallets}
           categories={categories}
           currency={currency}
+          privacyMode={privacyMode}
           onRefresh={onRefresh}
           onRecordRule={onRecordRecurring}
         />
@@ -227,14 +231,14 @@ export function BudgetsTab({
                       <button
                         type="button"
                         onClick={() => void handleConfirmDeleteBudget(b.id)}
-                        className="min-h-10 rounded-lg bg-[var(--expense)] px-2.5 text-xs font-semibold text-white"
+                        className="min-h-11 rounded-lg bg-[var(--expense)] px-3 text-xs font-semibold text-white"
                       >
                         Delete
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmDeleteId(null)}
-                        className="min-h-10 rounded-lg border border-[var(--border)] px-2 text-xs font-medium text-[var(--ink-muted)]"
+                        className="min-h-11 rounded-lg border border-[var(--border)] px-2.5 text-xs font-medium text-[var(--ink-muted)]"
                       >
                         Cancel
                       </button>
@@ -262,13 +266,22 @@ export function BudgetsTab({
                 </div>
 
                 <div className="tabular-nums mt-3 flex items-center justify-between text-xs text-[var(--ink-muted)]">
-                  <span>Spent: {formatCurrency(b.spent, currency)}</span>
-                  <span>Limit: {formatCurrency(b.limitAmount, currency)}</span>
+                  <span>
+                    Spent:{" "}
+                    {maskAmount(formatCurrency(b.spent, currency), privacyMode)}
+                  </span>
+                  <span>
+                    Limit:{" "}
+                    {maskAmount(
+                      formatCurrency(b.limitAmount, currency),
+                      privacyMode,
+                    )}
+                  </span>
                 </div>
                 <p className="tabular-nums mt-1 text-xs font-semibold text-[var(--ink)]">
                   {b.remaining >= 0
-                    ? `${formatCurrency(b.remaining, currency)} remaining`
-                    : `${formatCurrency(Math.abs(b.remaining), currency)} over cap`}
+                    ? `${maskAmount(formatCurrency(b.remaining, currency), privacyMode)} remaining`
+                    : `${maskAmount(formatCurrency(Math.abs(b.remaining), currency), privacyMode)} over cap`}
                 </p>
               </div>
             );

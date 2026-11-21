@@ -19,9 +19,14 @@ import type { MonthlyTrendPoint } from "@/lib/types";
 interface TrendChartProps {
   data: MonthlyTrendPoint[];
   currency: string;
+  privacyMode?: boolean;
 }
 
-export function TrendChart({ data, currency }: TrendChartProps) {
+export function TrendChart({
+  data,
+  currency,
+  privacyMode = false,
+}: TrendChartProps) {
   const [range, setRange] = useState<6 | 12>(6);
   const [mode, setMode] = useState<"netWorth" | "cashflow">("netWorth");
 
@@ -53,7 +58,9 @@ export function TrendChart({ data, currency }: TrendChartProps) {
                     netWorthDelta >= 0 ? "var(--income)" : "var(--expense)",
                 }}
               >
-                {formatCurrency(netWorthDelta, currency, { signed: true })}
+                {privacyMode
+                  ? "••••••••"
+                  : formatCurrency(netWorthDelta, currency, { signed: true })}
               </span>
             </p>
           )}
@@ -148,7 +155,9 @@ export function TrendChart({ data, currency }: TrendChartProps) {
                 axisLine={false}
                 tick={{ fill: "var(--ink-muted)", fontSize: 11 }}
                 tickFormatter={(v: number) =>
-                  formatCurrency(v, currency, { compact: true })
+                  privacyMode
+                    ? "•••"
+                    : formatCurrency(v, currency, { compact: true })
                 }
               />
               <Tooltip
@@ -160,7 +169,9 @@ export function TrendChart({ data, currency }: TrendChartProps) {
                   fontSize: "13px",
                 }}
                 formatter={(value) => [
-                  formatCurrency(Number(value ?? 0), currency),
+                  privacyMode
+                    ? "••••••••"
+                    : formatCurrency(Number(value ?? 0), currency),
                   "Net Worth",
                 ]}
                 labelFormatter={(_label, payload) => {
@@ -200,7 +211,9 @@ export function TrendChart({ data, currency }: TrendChartProps) {
                 axisLine={false}
                 tick={{ fill: "var(--ink-muted)", fontSize: 11 }}
                 tickFormatter={(v: number) =>
-                  formatCurrency(v, currency, { compact: true })
+                  privacyMode
+                    ? "•••"
+                    : formatCurrency(v, currency, { compact: true })
                 }
               />
               <Tooltip
@@ -213,7 +226,9 @@ export function TrendChart({ data, currency }: TrendChartProps) {
                   fontSize: "13px",
                 }}
                 formatter={(value, name) => [
-                  formatCurrency(Number(value ?? 0), currency),
+                  privacyMode
+                    ? "••••••••"
+                    : formatCurrency(Number(value ?? 0), currency),
                   name === "income" ? "Income" : "Expense",
                 ]}
                 labelFormatter={(_label, payload) => {

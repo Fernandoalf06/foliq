@@ -2,8 +2,10 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { CategoryGlyph, CloseIcon, TransferIcon } from "./icons";
+import { evaluateAmountExpression, hasMathOperator } from "@/lib/math-input";
 import { formatCurrency } from "@/lib/money";
 import { enqueueOfflineTransaction } from "@/lib/offline-queue";
+import { readLastWalletId, saveLastWalletId } from "@/lib/preferences";
 import type {
   CategoryItem,
   TransactionItem,
@@ -46,7 +48,12 @@ function QuickEntryDialog({
 }: QuickEntrySheetProps) {
   const isEditing = Boolean(editingTransaction);
 
-  const initialWalletId = editingTransaction?.wallet.id ?? wallets[0]?.id ?? "";
+  const rememberedWalletId = !isEditing ? readLastWalletId() : null;
+  const initialWalletId =
+    editingTransaction?.wallet.id ??
+    (rememberedWalletId && wallets.some((w) => w.id === rememberedWalletId)
+      ? rememberedWalletId
+      : (wallets[0]?.id ?? ""));
   const [type, setType] = useState<TransactionType>(
     editingTransaction?.type ?? initialType,
   );
@@ -149,17 +156,18 @@ function QuickEntryDialog({
         ];
 
   const addPreset = (delta: number) => {
-    const current = Number.parseFloat(amount || "0") || 0;
-    setAmount(String(current + delta));
+    const evaluated = evaluateAmountExpression(amount);
+    const current = evaluated ?? (Number.parseFloat(amount || "0") || 0);
+    setAmount(String(Math.round((current + delta) * 100) / 100));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const parsedAmount = Number.parseFloat(amount);
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      setError("Enter a valid amount greater than 0.");
+    const parsedAmount = evaluateAmountExpression(amount);
+    if (parsedAmount === null || parsedAmount <= 0) {
+      setError("Enter a valid amount or math expression greater than 0.");
       return;
     }
 
@@ -203,6 +211,7 @@ function QuickEntryDialog({
     };
 
     if (!editingTransaction && typeof navigator !== "undefined" && !navigator.onLine) {
+      saveLastWalletId(walletId);
       enqueueOfflineTransaction(payload);
       onOfflineQueued?.();
       setSubmitting(false);
@@ -229,11 +238,13 @@ function QuickEntryDialog({
         return;
       }
 
+      saveLastWalletId(walletId);
       await onSaved();
       setSubmitting(false);
       onClose();
     } catch {
       if (!editingTransaction) {
+        saveLastWalletId(walletId);
         enqueueOfflineTransaction(payload);
         onOfflineQueued?.();
         setSubmitting(false);
@@ -245,7 +256,8 @@ function QuickEntryDialog({
     }
   };
 
-  const numericAmount = Number.parseFloat(amount);
+  const evaluatedAmount = evaluateAmountExpression(amount);
+  const amountHasMath = hasMathOperator(amount);
 
   return (
     <div
@@ -261,7 +273,13 @@ function QuickEntryDialog({
         aria-labelledby="quick-entry-title"
         className="liquid-glass flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px]"
       >
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+        <div
+          aria-hidden="true"
+          className="flex justify-center pt-2.5 sm:hidden"
+        >
+          <span className="h-1 w-10 rounded-full bg-[var(--ink-muted)]/35" />
+        </div>
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3.5 sm:py-4">
           <h2
             id="quick-entry-title"
             className="text-lg font-bold text-[var(--ink)]"
@@ -331,29 +349,27 @@ function QuickEntryDialog({
               >
                 Amount ({entryCurrency})
               </label>
-              {amount.trim() !== "" &&
-                Number.isFinite(numericAmount) &&
-                numericAmount > 0 && (
-                  <span
-                    aria-live="polite"
-                    className="tabular-nums text-xs font-semibold text-[var(--accent-text)]"
-                  >
-                    {formatCurrency(numericAmount, entryCurrency)}
-                  </span>
-                )}
+              {amount.trim() !== "" && evaluatedAmount !== null && (
+                <span
+                  aria-live="polite"
+                  className="tabular-nums text-xs font-semibold text-[var(--accent-text)]"
+                >
+                  {amountHasMath ? "= " : ""}
+                  {formatCurrency(evaluatedAmount, entryCurrency)}
+                </span>
+              )}
             </div>
             <input
               ref={amountInputRef}
               id="entry-amount"
-              type="number"
-              step="any"
-              min="0"
+              type="text"
               required
               inputMode="decimal"
-              placeholder="0"
+              autoComplete="off"
+              placeholder="0 or 45000+18000"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="tabular-nums h-14 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-2xl font-bold text-[var(--ink)] placeholder:text-[var(--ink-muted)]"
+              className="tabular-nums h-14 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-2xl font-bold text-[var(--ink)] placeholder:text-base placeholder:font-medium placeholder:text-[var(--ink-muted)]"
             />
             <div className="mt-2.5 flex flex-wrap gap-2">
               {presets.map((preset) => (
@@ -361,11 +377,20 @@ function QuickEntryDialog({
                   key={preset.label}
                   type="button"
                   onClick={() => addPreset(preset.value)}
-                  className="tabular-nums min-h-10 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--surface-2)] active:scale-[0.98]"
+                  className="tabular-nums min-h-11 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--surface-2)] active:scale-[0.98]"
                 >
                   {preset.label}
                 </button>
               ))}
+              {amount.trim() !== "" && (
+                <button
+                  type="button"
+                  onClick={() => setAmount("")}
+                  className="min-h-11 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
 

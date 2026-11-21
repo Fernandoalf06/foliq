@@ -4,12 +4,14 @@ import React, { useState } from "react";
 import { CheckIcon, TargetIcon, TrashIcon } from "../icons";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatCurrency } from "@/lib/money";
+import { maskAmount } from "@/lib/preferences";
 import type { SavingsGoalItem, WalletItem } from "@/lib/types";
 
 interface GoalsSectionProps {
   goals: SavingsGoalItem[];
   wallets: WalletItem[];
   currency: string;
+  privacyMode?: boolean;
   onRefresh: () => Promise<void>;
 }
 
@@ -25,6 +27,7 @@ export function GoalsSection({
   goals,
   wallets,
   currency,
+  privacyMode = false,
   onRefresh,
 }: GoalsSectionProps) {
   const [name, setName] = useState("");
@@ -268,11 +271,18 @@ export function GoalsSection({
 
                   <div className="mt-4 flex flex-wrap items-baseline justify-between gap-2">
                     <p className="tabular-nums text-lg font-bold text-[var(--ink)]">
-                      {formatCurrency(goal.currentAmount, goal.currency)}
+                      {maskAmount(
+                        formatCurrency(goal.currentAmount, goal.currency),
+                        privacyMode,
+                      )}
                     </p>
                     <p className="tabular-nums text-xs font-medium text-[var(--ink-muted)]">
-                      of {formatCurrency(goal.targetAmount, goal.currency)} (
-                      {goal.percent}%)
+                      of{" "}
+                      {maskAmount(
+                        formatCurrency(goal.targetAmount, goal.currency),
+                        privacyMode,
+                      )}{" "}
+                      ({goal.percent}%)
                     </p>
                   </div>
 
@@ -289,7 +299,7 @@ export function GoalsSection({
                   <p className="tabular-nums mt-2 text-xs text-[var(--ink-muted)]">
                     {goal.isCompleted
                       ? "Goal reached."
-                      : `${formatCurrency(goal.remaining, goal.currency)} remaining`}
+                      : `${maskAmount(formatCurrency(goal.remaining, goal.currency), privacyMode)} remaining`}
                     {goal.note ? ` · ${goal.note}` : ""}
                   </p>
                 </div>

@@ -22,7 +22,7 @@ import {
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
-  title: "Monthly Financial Report | Foliq",
+  title: "Monthly Financial Report",
   robots: { index: false, follow: false },
 };
 
