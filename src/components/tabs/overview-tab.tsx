@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { CashflowChart } from "../cashflow-chart";
-import { CategoryGlyph, PlusIcon, TransferIcon } from "../icons";
+import { CategoryGlyph, PlusIcon, RepeatIcon, TransferIcon } from "../icons";
 import { TransactionRow } from "../transaction-row";
 import { formatCurrency } from "@/lib/money";
 import type {
@@ -17,6 +17,7 @@ interface OverviewTabProps {
   monthLabel: string;
   onOpenQuickEntry: (type: TransactionType) => void;
   onEditTransaction: (tx: TransactionItem) => void;
+  onRecordRecurring: (id: string) => Promise<void>;
   onNavigateTab: (tab: "ledger" | "budgets") => void;
 }
 
@@ -26,8 +27,20 @@ export function OverviewTab({
   monthLabel,
   onOpenQuickEntry,
   onEditTransaction,
+  onRecordRecurring,
   onNavigateTab,
 }: OverviewTabProps) {
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+  const dueOrUpcoming = data.recurringRules.filter(
+    (r) =>
+      r.isActive && (r.dueStatus === "due" || r.dueStatus === "upcoming"),
+  );
+
+  const handleRecord = async (id: string) => {
+    setRecordingId(id);
+    await onRecordRecurring(id);
+    setRecordingId(null);
+  };
   return (
     <div className="space-y-5">
       <section className="grid grid-cols-1 gap-4 md:grid-cols-12">
@@ -108,6 +121,77 @@ export function OverviewTab({
           </div>
         </div>
       </section>
+
+      {dueOrUpcoming.length > 0 && (
+        <section className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-[var(--ink)]">
+              <RepeatIcon className="h-4 w-4 text-[var(--accent-text)]" />
+              <span>Due & Upcoming Recurring ({dueOrUpcoming.length})</span>
+            </h2>
+            <button
+              type="button"
+              onClick={() => onNavigateTab("budgets")}
+              className="min-h-11 px-2 text-xs font-semibold text-[var(--accent-text)] hover:underline"
+            >
+              Manage schedules
+            </button>
+          </div>
+          <ul className="divide-y divide-[var(--border)]">
+            {dueOrUpcoming.slice(0, 4).map((rule) => {
+              const isIncome = rule.type === "INCOME";
+              return (
+                <li
+                  key={rule.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-1 last:pb-1"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[var(--ink)]">
+                      {rule.title}{" "}
+                      <span
+                        className="ml-1 text-xs font-semibold"
+                        style={{
+                          color:
+                            rule.dueStatus === "due"
+                              ? "var(--expense)"
+                              : "var(--warning)",
+                        }}
+                      >
+                        ({rule.dueStatus === "due" ? "Due now" : "Upcoming"})
+                      </span>
+                    </p>
+                    <p className="text-xs text-[var(--ink-muted)]">
+                      {rule.wallet.name} · {rule.category.name}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2.5">
+                    <span
+                      className="tabular-nums text-sm font-semibold"
+                      style={{
+                        color: isIncome ? "var(--income)" : "var(--expense)",
+                      }}
+                    >
+                      {formatCurrency(
+                        isIncome ? rule.amount : -rule.amount,
+                        currency,
+                        { signed: isIncome },
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={recordingId === rule.id}
+                      onClick={() => void handleRecord(rule.id)}
+                      className="inline-flex h-11 items-center rounded-xl bg-[var(--accent)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+                    >
+                      {recordingId === rule.id ? "Saving..." : "Record"}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <CashflowChart
         data={data.dailySeries}

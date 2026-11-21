@@ -12,6 +12,7 @@ import {
   SunIcon,
 } from "../icons";
 import { useTheme } from "../theme-provider";
+import { ShortcutsSection } from "./shortcuts-section";
 import type { UserProfile } from "@/lib/types";
 
 interface SettingsTabProps {
@@ -325,6 +326,9 @@ export function SettingsTab({
           </form>
         </section>
       </div>
+
+      {/* Apple Shortcuts & API Tokens */}
+      <ShortcutsSection />
 
       {/* Data Backup & Appearance */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">

@@ -6,13 +6,15 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 
 ---
 
-## Key Features (`v0.2.1`)
+## Key Features (`v0.3.0`)
 
-- **Quick Entry & Full Transaction Editing:** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and **Transfers** with numeric presets, live formatted currency preview, and full inline editing of any existing entry.
+- **Quick Entry, Editing & Offline Capture Queue:** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and **Transfers** with numeric presets, live formatted currency preview, inline editing, and automatic local queueing + auto-sync when capturing expenses offline.
+- **Recurring Bills, Subscriptions & Income:** Schedule weekly, monthly, or yearly bills and salary with timezone-aware *Due now* / *Upcoming (7d)* alerts on Overview, atomic one-tap **Record Now** (advancing `nextDueDate` with month-end clamping), and Pause/Resume controls.
+- **Apple Shortcuts Quick Capture API:** Generate revocable `flq_...` Bearer tokens in Settings to trigger instant expense logging from iPhone **Back Tap**, **Action Button**, or **Siri Shortcuts** via `POST /api/shortcuts/record`.
 - **Multi-Wallet Management & Archiving:** Track, edit, archive, and restore Cash, Bank, E-Wallet, Savings, and Credit accounts with exact minor-unit arithmetic (`NUMERIC(15, 2)` via PostgreSQL `groupBy`) and neutral transfers between wallets.
 - **Timezone-Accurate Cashflow & Analytics:** View total net balance, monthly income vs. expenses, savings rate, top spending categories, and a daily cashflow bar chart aligned to your local timezone (e.g., WIB `UTC+7`).
 - **Monthly Category Budgets:** Set monthly caps per expense category with clear pacing status (*On track*, *Near limit* at >= 80%, and *Over budget*), two-step delete confirmations, and custom category creation.
-- **Settings & Vault Controls:** Dedicated Settings view for updating display name and primary currency (`IDR`, `USD`, `SGD`, `EUR`), changing owner password with automatic cross-device session revocation, toggling Light / OLED Dark mode, and downloading all-time or monthly CSV backups.
+- **Settings & Vault Controls:** Dedicated Settings view for updating display name and primary currency (`IDR`, `USD`, `SGD`, `EUR`), changing owner password with automatic cross-device session revocation, managing Apple Shortcuts API tokens, toggling Light / OLED Dark mode, and downloading all-time or monthly CSV backups.
 - **Crisp Utility + Restrained Liquid Glass UI:** Solid high-contrast matte financial cards in Light and OLED Dark modes paired with frosted Liquid Glass strictly on floating navigation chrome.
 - **Single-Owner Security Model:** Designed to be safely open-sourced in a public repository while keeping your live deployment locked exclusively to your configured `OWNER_EMAIL`.
 
@@ -42,13 +44,13 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 ├── DESIGN.md                 # Visual direction, verified WCAG AA palette, Liquid Glass dose cap
 ├── CHANGELOG.md              # Release history (Keep a Changelog + SemVer)
 ├── prisma/
-│   ├── schema.prisma         # PostgreSQL schema (User, Session, Wallet, Category, Transaction, Budget, AuthRateLimit)
+│   ├── schema.prisma         # PostgreSQL schema (User, Session, Wallet, Category, Transaction, Budget, RecurringRule, ApiToken, AuthRateLimit)
 │   └── seed.ts               # Safe fictional demo seed (never overwrites existing users)
 ├── public/
 │   └── sw.js                 # Static-asset Service Worker with offline fallback (never caches /api/* or auth HTML)
 └── src/
     ├── app/
-    │   ├── api/              # Auth, Dashboard, Wallets, Transactions, Budgets, Categories, Settings, Export CSV
+    │   ├── api/              # Auth, Dashboard, Wallets, Transactions, Budgets, Recurring, Categories, Settings/Tokens, Shortcuts, Export CSV
     │   ├── icon-192/         # Dynamic 192x192 PWA icon
     │   ├── icon.tsx          # Dynamic 512x512 maskable PWA icon
     │   ├── apple-icon.tsx    # Dynamic 180x180 iOS Home Screen icon
@@ -56,9 +58,9 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
     │   ├── layout.tsx        # Root layout, font, PWA metadata, no-flash theme init
     │   └── page.tsx          # Server-side auth gate entry
     ├── components/
-    │   ├── tabs/             # OverviewTab, LedgerTab, WalletsTab, BudgetsTab, SettingsTab
+    │   ├── tabs/             # OverviewTab, LedgerTab, WalletsTab, BudgetsTab, RecurringSection, SettingsTab, ShortcutsSection
     │   └── ...               # AuthScreen, FoliqApp, QuickEntrySheet, CashflowChart, TransactionRow, custom SVG icons
-    └── lib/                  # Prisma Neon client, auth/rate-limit, CSRF security, exact money/timezone math, Zod schemas
+    └── lib/                  # Prisma Neon client, auth/token/rate-limit, CSRF security, exact money/recurring/offline-queue logic, Zod schemas
 ```
 
 ---
@@ -154,13 +156,35 @@ vercel deploy --prod
 4. Confirm the name **Foliq** and tap **Add**.
 5. Launch **Foliq** from your Home Screen. When you sign in, save your credentials to **Apple Passwords** so future sign-ins work in one tap with **Face ID**.
 
+### Setting Up Apple Shortcuts (iPhone Back Tap / Action Button)
+
+1. Open Foliq on iPhone, go to **Settings > Apple Shortcuts & Quick Capture API**, and generate a named token (e.g., `iPhone Back Tap`). Copy the `flq_...` token immediately (it is displayed once).
+2. Open the iOS **Shortcuts** app and tap **+** to create a new shortcut (e.g., *Log to Foliq*).
+3. Add **Ask for Input** (Number) for the amount and **Ask for Input** (Text) for the note.
+4. Add **Get Contents of URL**:
+   - **URL:** `https://<your-foliq-domain>/api/shortcuts/record`
+   - **Method:** `POST`
+   - **Headers:** `Authorization`: `Bearer flq_<your-token>` and `Content-Type`: `application/json`
+   - **Request Body (JSON):**
+     ```json
+     {
+       "amount": 35000,
+       "type": "EXPENSE",
+       "wallet": "E-Wallet",
+       "category": "Food & Dining",
+       "note": "Coffee"
+     }
+     ```
+5. *(Optional)* Bind the shortcut to **Settings > Accessibility > Touch > Back Tap** or your iPhone **Action Button**.
+
 ---
 
 ## Security Model (Public Repo + Private Finances)
 
 - **Zero Secrets in Git:** `.env*` files are strictly ignored by `.gitignore`; only `.env.example` is tracked.
 - **Single-Owner Registration Lock:** `/api/auth/register` rejects any email that does not match `OWNER_EMAIL` and blocks creation of additional accounts once the owner vault exists.
-- **Password, Session & Rate-Limit Hardening:** Passwords use Node `crypto.scrypt` with random per-user salts, constant-time comparison, and dummy verification on invalid emails. Session cookies are `HttpOnly`, `Secure` (production), `SameSite=Lax`, stored as HMAC-SHA256 hashes in Neon, and expired sessions are pruned automatically on sign-in. Brute-force rate limits persist in Neon (`auth_rate_limits`) across serverless instances.
+- **Password, Session & Rate-Limit Hardening:** Passwords use Node `crypto.scrypt` with random per-user salts, constant-time comparison, and dummy verification on invalid emails. Session cookies are `HttpOnly`, `Secure` (production), `SameSite=Lax`, stored as HMAC-SHA256 hashes in Neon, and expired sessions are pruned automatically on sign-in. Brute-force rate limits persist in Neon (`auth_rate_limits`) across serverless instances for login, registration, password changes, and Shortcuts webhook tokens.
+- **Revocable Shortcuts API Tokens:** `/api/shortcuts/record` authenticates via Bearer `flq_` tokens hashed with HMAC-SHA256 (`SESSION_SECRET`), displays raw tokens once at creation, caps active tokens at 10 per account, and supports instant revocation from Settings.
 - **CSRF, CSP & CSV Export Safety:** All mutating API routes verify same-origin headers, `next.config.ts` enforces a `Content-Security-Policy` plus strict frame/content-type/referrer headers, and CSV exports neutralize spreadsheet formula prefixes (`=`, `+`, `-`, `@`).
 - **No Private Caching:** `public/sw.js` bypasses `/api/*` and dynamic authenticated HTML routes, caching only static assets with a clean offline fallback screen.
 - **Private Indexing Policy:** `robots: { index: false, follow: false }` prevents search engines from indexing your personal deployment.
@@ -185,8 +209,9 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 - **v0.1.0:** Single-owner Neon auth, multi-wallet ledger, transfers, Quick Entry sheet, monthly cashflow & daily bar chart, category budgets, CSV export, iOS PWA shell.
 - **v0.1.1:** Local timezone accuracy (WIB/UTC+7), Neon persistent serverless rate limiting, CSV formula injection protection, CSRF Origin check & CSP header, UUID param validation, PostgreSQL `groupBy` wallet balance aggregation, Show/Hide password toggle, live currency preview, two-step wallet/budget delete confirmations, 192px PWA icon, and modular tab decomposition.
 - **v0.2.0:** Edit transactions, inline wallet editing & archived wallet restoration, and dedicated Settings panel (profile/currency, change password with session revocation, all-time CSV backup, appearance & vault info).
-- **v0.2.1 (Current):** Password-change persistent rate limiting, Settings feedback persistence fix, Quick Entry transfer/date guardrails, server-side active-wallet & archived-wallet invariants, live currency previews on Wallet/Budget forms, dynamic version display, and mandatory Full Audit Gate in `AGENTS.md`.
-- **v0.3.0 (Planned):** Recurring transactions (subscriptions & bills), offline capture queue, and authenticated Apple Shortcuts webhook endpoint for one-tap Back Tap / Action Button expense capture from iPhone Lock Screen.
+- **v0.2.1:** Password-change persistent rate limiting, Settings feedback persistence fix, Quick Entry transfer/date guardrails, server-side active-wallet & archived-wallet invariants, live currency previews on Wallet/Budget forms, dynamic version display, and mandatory Full Audit Gate in `AGENTS.md`.
+- **v0.3.0 (Current):** Recurring transactions (subscriptions, bills & salary with atomic one-tap recording), local offline capture queue with auto-sync on reconnect, and authenticated Apple Shortcuts webhook + revocable `flq_` API tokens.
+- **v0.4.0 (Planned):** Multi-currency wallets with saved exchange rates, savings goals / sinking funds, and quarterly/annual net-worth trend charts.
 
 ---
 

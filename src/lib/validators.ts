@@ -138,3 +138,48 @@ export const passwordChangeSchema = z
       });
     }
   });
+
+export const recurringRuleCreateSchema = z.object({
+  title: z.string().trim().min(1, "Title is required").max(60),
+  type: z.enum(["EXPENSE", "INCOME"]),
+  amount: z.coerce
+    .number()
+    .finite()
+    .positive("Amount must be greater than 0")
+    .max(999999999999, "Amount exceeds maximum limit"),
+  walletId: z.string().uuid("Select a valid wallet"),
+  categoryId: z.string().uuid("Select a valid category"),
+  cadence: z.enum(["WEEKLY", "MONTHLY", "YEARLY"]).default("MONTHLY"),
+  nextDueDate: z.string().datetime({ offset: true }),
+  note: z.string().trim().max(240).optional().default(""),
+});
+
+export const recurringRuleUpdateSchema = z.object({
+  title: z.string().trim().min(1).max(60).optional(),
+  amount: z.coerce.number().finite().positive().max(999999999999).optional(),
+  cadence: z.enum(["WEEKLY", "MONTHLY", "YEARLY"]).optional(),
+  nextDueDate: z.string().datetime({ offset: true }).optional(),
+  isActive: z.boolean().optional(),
+  note: z.string().trim().max(240).optional(),
+});
+
+export const apiTokenCreateSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Token name must be at least 2 characters")
+    .max(50),
+});
+
+export const shortcutRecordSchema = z.object({
+  amount: z.coerce
+    .number()
+    .finite()
+    .positive("Amount must be greater than 0")
+    .max(999999999999, "Amount exceeds maximum limit"),
+  type: z.enum(["EXPENSE", "INCOME"]).optional().default("EXPENSE"),
+  wallet: z.string().trim().max(60).optional(),
+  category: z.string().trim().max(60).optional(),
+  note: z.string().trim().max(240).optional().default(""),
+  occurredAt: z.string().datetime({ offset: true }).optional(),
+});

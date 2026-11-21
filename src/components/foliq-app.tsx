@@ -1,10 +1,17 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   BudgetIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CloudOffIcon,
   DownloadIcon,
   FoliqMark,
   LedgerIcon,
@@ -24,6 +31,14 @@ import { SettingsTab } from "./tabs/settings-tab";
 import { WalletsTab } from "./tabs/wallets-tab";
 import { useTheme } from "./theme-provider";
 import { formatMonthKey } from "@/lib/money";
+import {
+  clearOfflineQueue,
+  getOfflineQueueServerSnapshot,
+  getOfflineQueueSnapshot,
+  readOfflineQueue,
+  removeOfflineTransaction,
+  subscribeOfflineQueue,
+} from "@/lib/offline-queue";
 import type {
   DashboardPayload,
   TransactionItem,
@@ -61,6 +76,16 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
+
+  const pendingQueue = useSyncExternalStore(
+    subscribeOfflineQueue,
+    getOfflineQueueSnapshot,
+    getOfflineQueueServerSnapshot,
+  );
+  const [syncingQueue, setSyncingQueue] = useState(false);
+  const [confirmClearQueue, setConfirmClearQueue] = useState(false);
+  const syncingRef = useRef(false);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetInitialType, setSheetInitialType] =
@@ -219,6 +244,100 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
     }
   };
 
+  const handleRecordRecurring = async (id: string) => {
+    setActionError(null);
+    setStatusNotice(null);
+    try {
+      const res = await fetch(`/api/recurring/${id}/record`, {
+        method: "POST",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        onSignedOut();
+        return;
+      }
+      if (!res.ok) {
+        setActionError(json.error || "Failed to record recurring transaction.");
+        return;
+      }
+      setStatusNotice("Recurring entry recorded and next due date advanced.");
+      await loadDashboard(month);
+    } catch {
+      setActionError("Network error while recording recurring transaction.");
+    }
+  };
+
+  const syncOfflineQueue = useCallback(async () => {
+    if (syncingRef.current) return;
+    const queued = readOfflineQueue();
+    if (queued.length === 0) return;
+
+    syncingRef.current = true;
+    setSyncingQueue(true);
+    setActionError(null);
+    setConfirmClearQueue(false);
+
+    let syncedCount = 0;
+    try {
+      for (const item of queued) {
+        const res = await fetch("/api/transactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: item.type,
+            amount: item.amount,
+            walletId: item.walletId,
+            targetWalletId: item.targetWalletId,
+            categoryId: item.categoryId,
+            note: item.note,
+            occurredAt: item.occurredAt,
+          }),
+        });
+
+        if (res.status === 401) {
+          onSignedOut();
+          return;
+        }
+
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          setActionError(
+            json.error ||
+              "Could not sync an offline entry. Check your wallet or discard stale items.",
+          );
+          break;
+        }
+
+        removeOfflineTransaction(item.localId);
+        syncedCount += 1;
+      }
+
+      if (syncedCount > 0) {
+        setStatusNotice(
+          `Synced ${syncedCount} queued ${syncedCount === 1 ? "entry" : "entries"} to Neon.`,
+        );
+        await loadDashboard(month);
+      }
+    } catch {
+      setActionError(
+        "Still offline. Your queued entries remain stored safely on this device.",
+      );
+    } finally {
+      syncingRef.current = false;
+      setSyncingQueue(false);
+    }
+  }, [loadDashboard, month, onSignedOut]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      if (readOfflineQueue().length > 0) {
+        void syncOfflineQueue();
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [syncOfflineQueue]);
+
   const monthLabel = formatReadableMonth(month);
   const currency = data?.user.currency ?? "IDR";
   const exportHref = `/api/export?month=${encodeURIComponent(month)}&tzOffset=${encodeURIComponent(String(tzOffset))}`;
@@ -251,7 +370,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
         : activeTab === "wallets"
           ? "Wallets"
           : activeTab === "budgets"
-            ? "Monthly Budgets"
+            ? "Budgets & Recurring"
             : "Settings";
 
   return (
@@ -410,6 +529,84 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
             {pageHeading}
           </h1>
 
+          {pendingQueue.length > 0 && (
+            <div
+              role="status"
+              className="mb-4 flex flex-col gap-3 rounded-[20px] border border-[var(--accent)]/30 bg-[var(--accent-soft)] p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-start gap-3">
+                <CloudOffIcon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent-text)]" />
+                <div>
+                  <p className="text-sm font-semibold text-[var(--ink)]">
+                    {pendingQueue.length} offline{" "}
+                    {pendingQueue.length === 1 ? "entry" : "entries"} pending
+                    sync
+                  </p>
+                  <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
+                    Stored locally on this device and queued to sync to Neon
+                    when connected.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={syncingQueue}
+                  onClick={() => void syncOfflineQueue()}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--accent)] px-4 text-xs font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+                >
+                  {syncingQueue ? "Syncing..." : "Sync Now"}
+                </button>
+                {confirmClearQueue ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearOfflineQueue();
+                        setConfirmClearQueue(false);
+                        setStatusNotice("Offline queue cleared.");
+                      }}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--expense)] px-3 text-xs font-semibold text-white"
+                    >
+                      Confirm Discard
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmClearQueue(false)}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--ink)]"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClearQueue(true)}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                  >
+                    Discard
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {statusNotice && (
+            <div
+              role="status"
+              className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[var(--income)]/30 bg-[var(--income-soft)] px-4 py-3 text-sm font-medium text-[var(--income)]"
+            >
+              <span>{statusNotice}</span>
+              <button
+                type="button"
+                onClick={() => setStatusNotice(null)}
+                className="min-h-9 rounded-lg px-2 text-xs font-semibold underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {actionError && (
             <div
               role="alert"
@@ -466,6 +663,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
               monthLabel={monthLabel}
               onOpenQuickEntry={openQuickEntry}
               onEditTransaction={openEditTransaction}
+              onRecordRecurring={handleRecordRecurring}
               onNavigateTab={setActiveTab}
             />
           )}
@@ -496,12 +694,15 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           {data && activeTab === "budgets" && (
             <BudgetsTab
               budgets={data.budgets}
+              recurringRules={data.recurringRules}
+              wallets={data.wallets}
               categories={data.categories}
               month={month}
               monthLabel={monthLabel}
               currency={currency}
               onRefresh={() => loadDashboard(month)}
               onDeleteBudget={handleDeleteBudget}
+              onRecordRecurring={handleRecordRecurring}
             />
           )}
 
@@ -584,6 +785,11 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           categories={data.categories}
           onClose={closeSheet}
           onSaved={() => loadDashboard(month)}
+          onOfflineQueued={() =>
+            setStatusNotice(
+              "Saved to offline queue. It will sync automatically when you reconnect.",
+            )
+          }
         />
       )}
     </div>

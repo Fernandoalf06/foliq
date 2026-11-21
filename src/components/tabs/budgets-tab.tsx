@@ -2,28 +2,41 @@
 
 import React, { useState } from "react";
 import { CategoryGlyph, TrashIcon } from "../icons";
+import { RecurringSection } from "./recurring-section";
 import { formatCurrency } from "@/lib/money";
-import type { BudgetItem, CategoryItem } from "@/lib/types";
+import type {
+  BudgetItem,
+  CategoryItem,
+  RecurringRuleItem,
+  WalletItem,
+} from "@/lib/types";
 
 interface BudgetsTabProps {
   budgets: BudgetItem[];
+  recurringRules: RecurringRuleItem[];
+  wallets: WalletItem[];
   categories: CategoryItem[];
   month: string;
   monthLabel: string;
   currency: string;
   onRefresh: () => Promise<void>;
   onDeleteBudget: (id: string) => Promise<void>;
+  onRecordRecurring: (id: string) => Promise<void>;
 }
 
 export function BudgetsTab({
   budgets,
+  recurringRules,
+  wallets,
   categories,
   month,
   monthLabel,
   currency,
   onRefresh,
   onDeleteBudget,
+  onRecordRecurring,
 }: BudgetsTabProps) {
+  const [subView, setSubView] = useState<"caps" | "recurring">("caps");
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
@@ -109,9 +122,57 @@ export function BudgetsTab({
     }
   };
 
+  const dueCount = recurringRules.filter(
+    (r) => r.isActive && r.dueStatus === "due",
+  ).length;
+
   return (
     <div className="space-y-5">
-      {budgets.length === 0 ? (
+      <div
+        role="tablist"
+        aria-label="Budgets and recurring view"
+        className="grid max-w-md grid-cols-2 gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-1"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={subView === "caps"}
+          onClick={() => setSubView("caps")}
+          className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition-colors ${
+            subView === "caps"
+              ? "bg-[var(--accent)] text-white"
+              : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+          }`}
+        >
+          Monthly Caps ({budgets.length})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={subView === "recurring"}
+          onClick={() => setSubView("recurring")}
+          className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition-colors ${
+            subView === "recurring"
+              ? "bg-[var(--accent)] text-white"
+              : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+          }`}
+        >
+          Recurring{dueCount > 0 ? ` (${dueCount} due)` : ` (${recurringRules.length})`}
+        </button>
+      </div>
+
+      {subView === "recurring" ? (
+        <RecurringSection
+          rules={recurringRules}
+          wallets={wallets}
+          categories={categories}
+          currency={currency}
+          onRefresh={onRefresh}
+          onRecordRule={onRecordRecurring}
+        />
+      ) : (
+        <>
+          {budgets.length === 0 ? (
         <div className="rounded-[20px] border border-[var(--border)] bg-[var(--surface-1)] p-6">
           <h2 className="text-base font-bold text-[var(--ink)]">
             No category budgets set for {monthLabel}
@@ -348,6 +409,8 @@ export function BudgetsTab({
           </form>
         </section>
       </div>
+        </>
+      )}
     </div>
   );
 }

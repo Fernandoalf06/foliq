@@ -109,14 +109,19 @@ export async function DELETE(
       }
     }
 
-    const txCount = await prisma.transaction.count({
-      where: {
-        userId: user.id,
-        OR: [{ walletId: id }, { targetWalletId: id }],
-      },
-    });
+    const [txCount, recurringCount] = await Promise.all([
+      prisma.transaction.count({
+        where: {
+          userId: user.id,
+          OR: [{ walletId: id }, { targetWalletId: id }],
+        },
+      }),
+      prisma.recurringRule.count({
+        where: { userId: user.id, walletId: id },
+      }),
+    ]);
 
-    if (txCount > 0) {
+    if (txCount > 0 || recurringCount > 0) {
       await prisma.wallet.update({
         where: { id },
         data: { isArchived: true },

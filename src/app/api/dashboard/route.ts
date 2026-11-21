@@ -11,6 +11,7 @@ import {
   toMinorUnits,
 } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
+import { getRecurringDueStatus } from "@/lib/recurring";
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
       incomingTransferSums,
       monthTransactions,
       budgets,
+      recurringRules,
     ] = await Promise.all([
       prisma.wallet.findMany({
         where: { userId: user.id },
@@ -81,6 +83,14 @@ export async function GET(request: NextRequest) {
           category: { select: { id: true, name: true, icon: true } },
         },
         orderBy: { createdAt: "asc" },
+      }),
+      prisma.recurringRule.findMany({
+        where: { userId: user.id },
+        include: {
+          wallet: { select: { id: true, name: true, type: true } },
+          category: { select: { id: true, name: true, icon: true, type: true } },
+        },
+        orderBy: [{ isActive: "desc" }, { nextDueDate: "asc" }],
       }),
     ]);
 
@@ -212,6 +222,21 @@ export async function GET(request: NextRequest) {
       category: tx.category,
     }));
 
+    const now = new Date();
+    const serializedRecurring = recurringRules.map((r) => ({
+      id: r.id,
+      title: r.title,
+      type: r.type,
+      amount: Number(r.amount.toString()),
+      cadence: r.cadence,
+      nextDueDate: r.nextDueDate.toISOString(),
+      dueStatus: getRecurringDueStatus(r.nextDueDate, now, tzOffset),
+      isActive: r.isActive,
+      note: r.note,
+      wallet: r.wallet,
+      category: r.category,
+    }));
+
     return NextResponse.json({
       user,
       month,
@@ -227,6 +252,7 @@ export async function GET(request: NextRequest) {
       })),
       transactions: serializedTransactions,
       budgets: serializedBudgets,
+      recurringRules: serializedRecurring,
       categoryBreakdown,
       dailySeries,
     });

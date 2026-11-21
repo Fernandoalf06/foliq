@@ -26,6 +26,12 @@ enum TransactionType {
   TRANSFER
 }
 
+enum RecurringCadence {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
 model User {
   id           String        @id @default(uuid()) @db.Uuid
   email        String        @unique
@@ -35,11 +41,13 @@ model User {
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
-  sessions     Session[]
-  wallets      Wallet[]
-  categories   Category[]
-  transactions Transaction[]
-  budgets      Budget[]
+  sessions       Session[]
+  wallets        Wallet[]
+  categories     Category[]
+  transactions   Transaction[]
+  budgets        Budget[]
+  recurringRules RecurringRule[]
+  apiTokens      ApiToken[]
 
   @@map("users")
 }
@@ -70,9 +78,10 @@ model Wallet {
   createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz
 
-  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  outgoingTransactions Transaction[] @relation("SourceWallet")
-  incomingTransfers    Transaction[] @relation("TargetWallet")
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outgoingTransactions Transaction[]   @relation("SourceWallet")
+  incomingTransfers    Transaction[]   @relation("TargetWallet")
+  recurringRules       RecurringRule[]
 
   @@index([userId])
   @@map("wallets")
@@ -87,9 +96,10 @@ model Category {
   isDefault Boolean      @default(false) @map("is_default")
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-  budgets      Budget[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions   Transaction[]
+  budgets        Budget[]
+  recurringRules RecurringRule[]
 
   @@unique([userId, name, type])
   @@index([userId])
@@ -146,4 +156,44 @@ model AuthRateLimit {
 
   @@index([windowStart])
   @@map("auth_rate_limits")
+}
+
+model RecurringRule {
+  id          String           @id @default(uuid()) @db.Uuid
+  userId      String           @map("user_id") @db.Uuid
+  title       String
+  type        CategoryType
+  amount      Decimal          @db.Decimal(15, 2)
+  walletId    String           @map("wallet_id") @db.Uuid
+  categoryId  String           @map("category_id") @db.Uuid
+  cadence     RecurringCadence @default(MONTHLY)
+  nextDueDate DateTime         @map("next_due_date") @db.Timestamptz
+  isActive    Boolean          @default(true) @map("is_active")
+  note        String           @default("")
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet   Wallet   @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([userId, isActive, nextDueDate])
+  @@index([walletId])
+  @@index([categoryId])
+  @@map("recurring_rules")
+}
+
+model ApiToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  name        String
+  tokenPrefix String    @map("token_prefix")
+  tokenHash   String    @unique @map("token_hash")
+  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("api_tokens")
 }

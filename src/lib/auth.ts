@@ -87,6 +87,35 @@ export async function checkPersistentAuthRateLimit(key: string): Promise<{
   }
 }
 
+export async function isPersistentAuthRateLimited(key: string): Promise<{
+  limited: boolean;
+  retryAfterSeconds: number;
+}> {
+  const nowMs = Date.now();
+  const hashedKey = crypto.createHash("sha256").update(key).digest("hex");
+  try {
+    const existing = await prisma.authRateLimit.findUnique({
+      where: { key: hashedKey },
+    });
+    if (
+      existing &&
+      nowMs - existing.windowStart.getTime() < RATE_WINDOW_MS &&
+      existing.attempts >= RATE_MAX_ATTEMPTS
+    ) {
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil(
+          (RATE_WINDOW_MS - (nowMs - existing.windowStart.getTime())) / 1000,
+        ),
+      );
+      return { limited: true, retryAfterSeconds };
+    }
+    return { limited: false, retryAfterSeconds: 0 };
+  } catch {
+    return { limited: false, retryAfterSeconds: 0 };
+  }
+}
+
 export async function clearPersistentAuthRateLimit(key: string): Promise<void> {
   clearAuthRateLimit(key);
   const hashedKey = crypto.createHash("sha256").update(key).digest("hex");
@@ -144,6 +173,25 @@ function hashSessionToken(rawToken: string): string {
   return crypto
     .createHmac("sha256", getSessionSecret())
     .update(rawToken)
+    .digest("hex");
+}
+
+export function generateApiToken(): {
+  rawToken: string;
+  tokenPrefix: string;
+  tokenHash: string;
+} {
+  const randomPart = crypto.randomBytes(24).toString("base64url");
+  const rawToken = `flq_${randomPart}`;
+  const tokenPrefix = rawToken.slice(0, 12);
+  const tokenHash = hashApiToken(rawToken);
+  return { rawToken, tokenPrefix, tokenHash };
+}
+
+export function hashApiToken(rawToken: string): string {
+  return crypto
+    .createHmac("sha256", getSessionSecret())
+    .update(`api-token:${rawToken}`)
     .digest("hex");
 }
 

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CategoryGlyph, CloseIcon, TransferIcon } from "./icons";
 import { formatCurrency } from "@/lib/money";
+import { enqueueOfflineTransaction } from "@/lib/offline-queue";
 import type {
   CategoryItem,
   TransactionItem,
@@ -19,6 +20,7 @@ interface QuickEntrySheetProps {
   categories: CategoryItem[];
   onClose: () => void;
   onSaved: () => Promise<void>;
+  onOfflineQueued?: () => void;
 }
 
 function toLocalDateTimeInput(date: Date): string {
@@ -40,6 +42,7 @@ function QuickEntryDialog({
   categories,
   onClose,
   onSaved,
+  onOfflineQueued,
 }: QuickEntrySheetProps) {
   const isEditing = Boolean(editingTransaction);
 
@@ -159,14 +162,33 @@ function QuickEntryDialog({
     }
 
     setSubmitting(true);
+    const parsedDate = occurredLocal ? new Date(occurredLocal) : new Date();
+    if (Number.isNaN(parsedDate.getTime())) {
+      setError("Enter a valid date and time.");
+      setSubmitting(false);
+      return;
+    }
+
+    const occurredAt = parsedDate.toISOString();
+    const payload = {
+      type,
+      amount: parsedAmount,
+      walletId,
+      targetWalletId: type === "TRANSFER" ? targetWalletId : null,
+      categoryId: type === "TRANSFER" ? null : effectiveCategoryId,
+      note: note.trim(),
+      occurredAt,
+    };
+
+    if (!editingTransaction && typeof navigator !== "undefined" && !navigator.onLine) {
+      enqueueOfflineTransaction(payload);
+      onOfflineQueued?.();
+      setSubmitting(false);
+      onClose();
+      return;
+    }
+
     try {
-      const parsedDate = occurredLocal ? new Date(occurredLocal) : new Date();
-      if (Number.isNaN(parsedDate.getTime())) {
-        setError("Enter a valid date and time.");
-        setSubmitting(false);
-        return;
-      }
-      const occurredAt = parsedDate.toISOString();
       const endpoint = editingTransaction
         ? `/api/transactions/${editingTransaction.id}`
         : "/api/transactions";
@@ -175,15 +197,7 @@ function QuickEntryDialog({
       const res = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          amount: parsedAmount,
-          walletId,
-          targetWalletId: type === "TRANSFER" ? targetWalletId : null,
-          categoryId: type === "TRANSFER" ? null : effectiveCategoryId,
-          note: note.trim(),
-          occurredAt,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -197,7 +211,14 @@ function QuickEntryDialog({
       setSubmitting(false);
       onClose();
     } catch {
-      setError("Network error while saving transaction.");
+      if (!editingTransaction) {
+        enqueueOfflineTransaction(payload);
+        onOfflineQueued?.();
+        setSubmitting(false);
+        onClose();
+        return;
+      }
+      setError("You appear to be offline. Editing existing entries requires a connection.");
       setSubmitting(false);
     }
   };

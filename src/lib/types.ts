@@ -1,6 +1,7 @@
 export type WalletType = "CASH" | "BANK" | "EWALLET" | "CREDIT" | "SAVINGS";
 export type TransactionType = "EXPENSE" | "INCOME" | "TRANSFER";
 export type CategoryType = "EXPENSE" | "INCOME";
+export type RecurringCadence = "WEEKLY" | "MONTHLY" | "YEARLY";
 
 export interface UserProfile {
   id: string;
@@ -63,6 +64,28 @@ export interface DailySeriesPoint {
   expense: number;
 }
 
+export interface RecurringRuleItem {
+  id: string;
+  title: string;
+  type: CategoryType;
+  amount: number;
+  cadence: RecurringCadence;
+  nextDueDate: string;
+  dueStatus: "due" | "upcoming" | "scheduled";
+  isActive: boolean;
+  note: string;
+  wallet: { id: string; name: string; type: WalletType };
+  category: { id: string; name: string; icon: string; type: CategoryType };
+}
+
+export interface ApiTokenItem {
+  id: string;
+  name: string;
+  tokenPrefix: string;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
 export interface DashboardPayload {
   user: UserProfile;
   month: string;
@@ -78,6 +101,7 @@ export interface DashboardPayload {
   categories: CategoryItem[];
   transactions: TransactionItem[];
   budgets: BudgetItem[];
+  recurringRules: RecurringRuleItem[];
   categoryBreakdown: CategoryBreakdownItem[];
   dailySeries: DailySeriesPoint[];
 }

@@ -4,6 +4,32 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-11-21
+
+### Added
+
+- **Recurring Bills, Subscriptions & Income (`recurring_rules`):**
+  - Added full CRUD endpoints (`GET/POST /api/recurring`, `PATCH/DELETE /api/recurring/[id]`) and atomic one-tap recording (`POST /api/recurring/[id]/record`) with optimistic concurrency protection (`409` on concurrent double-tap) and month-end date clamping (`WEEKLY`, `MONTHLY`, `YEARLY`).
+  - Added timezone-aware due status tracking (`due`, `upcoming` within 7 days, `scheduled`) surfaced in a **Due & Upcoming Recurring** panel on Overview and a **Recurring** sub-view inside **Budgets & Recurring** with Pause/Resume and two-step Delete.
+- **Offline Capture Queue (`src/lib/offline-queue.ts`):**
+  - New entries submitted in Quick Entry while offline (or during a network drop) are queued safely in local device storage instead of being lost.
+  - Added a hydration-safe (`useSyncExternalStore`) **Pending Offline Queue** banner with automatic sequential replay on browser `online` reconnection, manual **Sync Now** with concurrency guard, and two-step **Discard** controls.
+- **Authenticated Apple Shortcuts Webhook & Revocable API Tokens (`api_tokens`):**
+  - Added **Apple Shortcuts & Quick Capture API** management inside Settings (`GET/POST /api/settings/tokens`, `DELETE /api/settings/tokens/[id]`, capped at 10 active tokens) showing each `flq_...` token once on creation and storing only HMAC-SHA256 hashes in Neon.
+  - Added `POST /api/shortcuts/record` authenticated via `Authorization: Bearer flq_...` so iPhone Back Tap, Action Button, or Siri Shortcuts can log expenses or income directly into Neon with smart wallet/category name matching and safe fallback.
+- **Expanded Unit Tests:** Added `src/lib/recurring.test.ts` (cadence advancement, leap-year clamping, WIB timezone due classification), `src/lib/offline-queue.test.ts`, and expanded `src/lib/validators.test.ts` for recurring, token, and shortcut schemas.
+
+### Changed
+
+- Updated the Budgets tab heading to **Budgets & Recurring** with a segmented `Monthly Caps` / `Recurring` switcher.
+- Updated `DELETE /api/wallets/[id]` to check linked recurring schedules alongside transactions before deleting vs. archiving a wallet.
+- Updated Service Worker cache namespace to `foliq-shell-v0-3-0`.
+
+### Security
+
+- Enforced Neon-backed persistent rate limiting (`isPersistentAuthRateLimited` + `checkPersistentAuthRateLimit`) on `POST /api/shortcuts/record` before database token lookups so blocked IPs receive `429 Too Many Requests` without hammering `api_tokens`.
+- Enforced single-display revocable `flq_` API tokens hashed with HMAC-SHA256 (`SESSION_SECRET`) and strict Bearer authentication on `/api/shortcuts/record`.
+
 ## [0.2.1] - 2026-11-21
 
 ### Security
