@@ -37,12 +37,18 @@ Every update, feature addition, bug fix, or release MUST complete ALL applicable
    - Keep `README.md` clear, detailed, and always in sync with the codebase: features, screenshots/architecture, tech stack, local & Neon setup, Vercel CLI deployment steps, iPhone PWA installation guide, security model, and release roadmap.
 5. **Pre-Release Verification Gate:**
    - Run typecheck, lint, unit tests, and production build (`npm run build`) before tagging or deploying.
-6. **Git Tag & GitHub Release:**
+6. **Mandatory Full Audit Gate (Bugs + Security + UI/UX) Before Any Newer Version:**
+   - Every time a new version is built or released, a comprehensive end-to-end audit MUST be performed and reported BEFORE advancing to the next version:
+     - **Bug & Correctness Audit:** Review all new/modified routes, state logic, edge cases (timezone, UUID validation, archive/delete invariants, error paths), and regression tests.
+     - **Security Audit:** Verify zero secrets in Git, Single-Owner Lock, rate limiting persistence, CSRF same-origin enforcement, CSP & security headers, input sanitization (Zod, CSV formula neutralization), session handling, and `npm audit`.
+     - **UI & UX Overall Audit:** Inspect rendered desktop and mobile (`390x844`) views in both Light and Dark OLED themes, verify zero console/CSP errors, zero horizontal overflow, `>= 44x44px` tap targets, WCAG AA contrast, restrained Liquid Glass compliance (`DESIGN.md`), and PWA manifest/Service Worker health.
+   - Any Critical or High findings discovered in the audit MUST be resolved (via a patch bump if already released, or fixed prior to release) before starting features for the next minor/major version.
+7. **Git Tag & GitHub Release:**
    - Commit version bump, `CHANGELOG.md`, and `README.md`.
    - Create annotated tag `vX.Y.Z` (`git tag -a vX.Y.Z -m "Release vX.Y.Z"`).
    - Push commits and tags to `origin`.
    - Publish a GitHub Release with release notes via `gh release create vX.Y.Z`.
-7. **Vercel Deployment:**
+8. **Vercel Deployment:**
    - Deploy updates via Vercel CLI (`vercel deploy` for previews, `vercel deploy --prod` for releases) and verify environment variables are configured in Vercel rather than source files.
 
 ## 4. Global Skills Usage Policy

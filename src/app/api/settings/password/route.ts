@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  checkPersistentAuthRateLimit,
+  clearPersistentAuthRateLimit,
   createSession,
   getCurrentUser,
   hashPassword,
@@ -17,6 +19,17 @@ export async function POST(request: NextRequest) {
     const currentUser = await getCurrentUser();
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rateKey = `password-change:${currentUser.id}`;
+    const rate = await checkPersistentAuthRateLimit(rateKey);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        {
+          error: `Too many password attempts. Try again in ${rate.retryAfterSeconds} seconds.`,
+        },
+        { status: 429 },
+      );
     }
 
     const body = await request.json().catch(() => null);
@@ -55,8 +68,9 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    // Issue a fresh session for the current browser/device
+    // Issue a fresh session for the current browser/device and reset rate limit
     await createSession(dbUser.id, request.headers.get("user-agent"));
+    await clearPersistentAuthRateLimit(rateKey);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

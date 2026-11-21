@@ -171,12 +171,23 @@ export function WalletsTab({
                   </select>
                 </div>
                 <div>
-                  <label
-                    htmlFor={`edit-wallet-initial-${w.id}`}
-                    className="mb-1 block text-xs font-medium text-[var(--ink-muted)]"
-                  >
-                    Opening Balance ({w.currency})
-                  </label>
+                  <div className="mb-1 flex items-baseline justify-between gap-2">
+                    <label
+                      htmlFor={`edit-wallet-initial-${w.id}`}
+                      className="block text-xs font-medium text-[var(--ink-muted)]"
+                    >
+                      Opening Balance ({w.currency})
+                    </label>
+                    {editInitial.trim() !== "" &&
+                      Number.isFinite(Number.parseFloat(editInitial)) && (
+                        <span className="tabular-nums text-xs font-semibold text-[var(--accent-text)]">
+                          {formatCurrency(
+                            Number.parseFloat(editInitial),
+                            w.currency,
+                          )}
+                        </span>
+                      )}
+                  </div>
                   <input
                     id={`edit-wallet-initial-${w.id}`}
                     type="number"
@@ -334,12 +345,24 @@ export function WalletsTab({
           </div>
 
           <div className="sm:col-span-3">
-            <label
-              htmlFor="wallet-initial"
-              className="mb-1.5 block text-sm font-medium text-[var(--ink)]"
-            >
-              Opening Balance ({currency})
-            </label>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <label
+                htmlFor="wallet-initial"
+                className="block text-sm font-medium text-[var(--ink)]"
+              >
+                Opening Balance ({currency})
+              </label>
+              {walletInitial.trim() !== "" &&
+                Number.isFinite(Number.parseFloat(walletInitial)) &&
+                Number.parseFloat(walletInitial) !== 0 && (
+                  <span className="tabular-nums text-xs font-semibold text-[var(--accent-text)]">
+                    {formatCurrency(
+                      Number.parseFloat(walletInitial),
+                      currency,
+                    )}
+                  </span>
+                )}
+            </div>
             <input
               id="wallet-initial"
               type="number"

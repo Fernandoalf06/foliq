@@ -1,4 +1,4 @@
-const CACHE_NAME = "foliq-shell-v0-2-0";
+const CACHE_NAME = "foliq-shell-v0-2-1";
 const STATIC_ASSETS = [
   "/manifest.webmanifest",
   "/icon-192",

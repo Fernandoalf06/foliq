@@ -6,7 +6,7 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 
 ---
 
-## Key Features (`v0.2.0`)
+## Key Features (`v0.2.1`)
 
 - **Quick Entry & Full Transaction Editing:** Floating Liquid Glass bottom dock with a one-tap `+` action for recording **Expenses**, **Income**, and **Transfers** with numeric presets, live formatted currency preview, and full inline editing of any existing entry.
 - **Multi-Wallet Management & Archiving:** Track, edit, archive, and restore Cash, Bank, E-Wallet, Savings, and Credit accounts with exact minor-unit arithmetic (`NUMERIC(15, 2)` via PostgreSQL `groupBy`) and neutral transfers between wallets.
@@ -175,7 +175,8 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 2. Bump `"version"` in `package.json` using Semantic Versioning (`MAJOR.MINOR.PATCH`).
 3. Update `CHANGELOG.md` and `README.md`.
 4. Pass `npm run typecheck`, `npm run lint`, `npm run test`, and `npm run build`.
-5. Tag (`git tag -a vX.Y.Z -m "Release vX.Y.Z"`), push to GitHub, create a GitHub Release (`gh release create`), and deploy via `vercel deploy --prod`.
+5. Complete the mandatory **Full Audit Gate** (Bugs + Security + UI/UX) and resolve all Critical/High findings before advancing to a newer version.
+6. Tag (`git tag -a vX.Y.Z -m "Release vX.Y.Z"`), push to GitHub, create a GitHub Release (`gh release create`), and deploy via `vercel deploy --prod`.
 
 ---
 
@@ -183,7 +184,8 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 
 - **v0.1.0:** Single-owner Neon auth, multi-wallet ledger, transfers, Quick Entry sheet, monthly cashflow & daily bar chart, category budgets, CSV export, iOS PWA shell.
 - **v0.1.1:** Local timezone accuracy (WIB/UTC+7), Neon persistent serverless rate limiting, CSV formula injection protection, CSRF Origin check & CSP header, UUID param validation, PostgreSQL `groupBy` wallet balance aggregation, Show/Hide password toggle, live currency preview, two-step wallet/budget delete confirmations, 192px PWA icon, and modular tab decomposition.
-- **v0.2.0 (Current):** Edit transactions, inline wallet editing & archived wallet restoration, and dedicated Settings panel (profile/currency, change password with session revocation, all-time CSV backup, appearance & vault info).
+- **v0.2.0:** Edit transactions, inline wallet editing & archived wallet restoration, and dedicated Settings panel (profile/currency, change password with session revocation, all-time CSV backup, appearance & vault info).
+- **v0.2.1 (Current):** Password-change persistent rate limiting, Settings feedback persistence fix, Quick Entry transfer/date guardrails, server-side active-wallet & archived-wallet invariants, live currency previews on Wallet/Budget forms, dynamic version display, and mandatory Full Audit Gate in `AGENTS.md`.
 - **v0.3.0 (Planned):** Recurring transactions (subscriptions & bills), offline capture queue, and authenticated Apple Shortcuts webhook endpoint for one-tap Back Tap / Action Button expense capture from iPhone Lock Screen.
 
 ---

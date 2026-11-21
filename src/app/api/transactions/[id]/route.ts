@@ -47,22 +47,32 @@ export async function PATCH(
       parsed.data;
 
     const sourceWallet = await prisma.wallet.findFirst({
-      where: { id: walletId, userId: user.id },
+      where: {
+        id: walletId,
+        userId: user.id,
+        ...(walletId === existing.walletId ? {} : { isArchived: false }),
+      },
     });
     if (!sourceWallet) {
       return NextResponse.json(
-        { error: "Source wallet not found" },
+        { error: "Source wallet not found or archived" },
         { status: 404 },
       );
     }
 
     if (type === "TRANSFER" && targetWalletId) {
       const destinationWallet = await prisma.wallet.findFirst({
-        where: { id: targetWalletId, userId: user.id },
+        where: {
+          id: targetWalletId,
+          userId: user.id,
+          ...(targetWalletId === existing.targetWalletId
+            ? {}
+            : { isArchived: false }),
+        },
       });
       if (!destinationWallet) {
         return NextResponse.json(
-          { error: "Destination wallet not found" },
+          { error: "Destination wallet not found or archived" },
           { status: 404 },
         );
       }

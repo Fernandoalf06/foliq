@@ -37,6 +37,18 @@ export async function PATCH(
       return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
     }
 
+    if (parsed.data.isArchived === true && !existing.isArchived) {
+      const activeCount = await prisma.wallet.count({
+        where: { userId: user.id, isArchived: false },
+      });
+      if (activeCount <= 1) {
+        return NextResponse.json(
+          { error: "You must keep at least one active wallet" },
+          { status: 400 },
+        );
+      }
+    }
+
     const updated = await prisma.wallet.update({
       where: { id },
       data: parsed.data,
@@ -83,6 +95,18 @@ export async function DELETE(
     });
     if (!existing) {
       return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+    }
+
+    if (!existing.isArchived) {
+      const activeCount = await prisma.wallet.count({
+        where: { userId: user.id, isArchived: false },
+      });
+      if (activeCount <= 1) {
+        return NextResponse.json(
+          { error: "You must keep at least one active wallet" },
+          { status: 400 },
+        );
+      }
     }
 
     const txCount = await prisma.transaction.count({

@@ -247,12 +247,27 @@ export function BudgetsTab({
               </select>
             </div>
             <div>
-              <label
-                htmlFor="budget-limit"
-                className="mb-1.5 block text-sm font-medium text-[var(--ink)]"
-              >
-                Monthly Limit ({currency})
-              </label>
+              <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                <label
+                  htmlFor="budget-limit"
+                  className="block text-sm font-medium text-[var(--ink)]"
+                >
+                  Monthly Limit ({currency})
+                </label>
+                {budgetLimit.trim() !== "" &&
+                  Number.isFinite(Number.parseFloat(budgetLimit)) &&
+                  Number.parseFloat(budgetLimit) > 0 && (
+                    <span
+                      aria-live="polite"
+                      className="tabular-nums text-xs font-semibold text-[var(--accent-text)]"
+                    >
+                      {formatCurrency(
+                        Number.parseFloat(budgetLimit),
+                        currency,
+                      )}
+                    </span>
+                  )}
+              </div>
               <input
                 id="budget-limit"
                 type="number"

@@ -43,21 +43,19 @@ function QuickEntryDialog({
 }: QuickEntrySheetProps) {
   const isEditing = Boolean(editingTransaction);
 
+  const initialWalletId = editingTransaction?.wallet.id ?? wallets[0]?.id ?? "";
   const [type, setType] = useState<TransactionType>(
     editingTransaction?.type ?? initialType,
   );
   const [amount, setAmount] = useState(
     editingTransaction ? String(editingTransaction.amount) : "",
   );
-  const [walletId, setWalletId] = useState(
-    () => editingTransaction?.wallet.id ?? wallets[0]?.id ?? "",
-  );
+  const [walletId, setWalletId] = useState(() => initialWalletId);
   const [targetWalletId, setTargetWalletId] = useState(
     () =>
       editingTransaction?.targetWallet?.id ??
-      wallets[1]?.id ??
-      wallets[0]?.id ??
-      "",
+      wallets.find((w) => w.id !== initialWalletId)?.id ??
+      initialWalletId,
   );
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     () => editingTransaction?.category?.id ?? "",
@@ -162,7 +160,13 @@ function QuickEntryDialog({
 
     setSubmitting(true);
     try {
-      const occurredAt = new Date(occurredLocal).toISOString();
+      const parsedDate = occurredLocal ? new Date(occurredLocal) : new Date();
+      if (Number.isNaN(parsedDate.getTime())) {
+        setError("Enter a valid date and time.");
+        setSubmitting(false);
+        return;
+      }
+      const occurredAt = parsedDate.toISOString();
       const endpoint = editingTransaction
         ? `/api/transactions/${editingTransaction.id}`
         : "/api/transactions";
@@ -333,7 +337,16 @@ function QuickEntryDialog({
               <select
                 id="entry-wallet"
                 value={walletId}
-                onChange={(e) => setWalletId(e.target.value)}
+                onChange={(e) => {
+                  const nextWalletId = e.target.value;
+                  setWalletId(nextWalletId);
+                  if (nextWalletId === targetWalletId) {
+                    const alternative = selectableWallets.find(
+                      (w) => w.id !== nextWalletId,
+                    );
+                    if (alternative) setTargetWalletId(alternative.id);
+                  }
+                }}
                 required
                 className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm font-medium text-[var(--ink)]"
               >

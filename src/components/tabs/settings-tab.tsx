@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import pkg from "../../../package.json";
 import {
   DownloadIcon,
   EyeIcon,
@@ -392,7 +393,7 @@ export function SettingsTab({
             <p className="flex items-center gap-2 pt-1 text-xs text-[var(--ink-muted)]">
               <LockIcon className="h-3.5 w-3.5 shrink-0" />
               <span>
-                Foliq v0.2.0 · Single-owner Neon PostgreSQL session
+                Foliq v{pkg.version} · Single-owner Neon PostgreSQL session
               </span>
             </p>
           </div>

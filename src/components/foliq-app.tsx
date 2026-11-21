@@ -507,7 +507,6 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
 
           {data && activeTab === "settings" && (
             <SettingsTab
-              key={`${data.user.name}-${data.user.currency}`}
               user={data.user}
               monthLabel={monthLabel}
               monthExportHref={exportHref}

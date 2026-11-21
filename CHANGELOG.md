@@ -4,6 +4,24 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.1] - 2026-11-21
+
+### Security
+
+- **Password Change Rate Limiting:** Enforced Neon-backed persistent rate limiting (`checkPersistentAuthRateLimit`) on `POST /api/settings/password` to prevent unlimited current-password brute-force attempts on an active session.
+
+### Fixed
+
+- **Settings Save Confirmation Stability:** Removed the remounting `key` on `SettingsTab` so saving Display Name or Primary Currency preserves the confirmation banner instead of immediately unmounting the tab and resetting in-progress password fields.
+- **Quick Entry Transfer & Date Edge Cases:** Prevented identical source/destination wallet defaults when switching an edited entry to Transfer, auto-switched destination wallet when source matches it, and added safe date validation if the Date & Time field is cleared.
+- **Archived Wallet Reassignment Guard:** Restricted `PATCH /api/transactions/[id]` so archived wallets can only remain attached to existing historical entries and cannot be newly reassigned.
+- **Server-Side Active Wallet Invariant:** Enforced the minimum one active wallet invariant on `DELETE /api/wallets/[id]` and `PATCH /api/wallets/[id]` (`isArchived: true`) so API callers cannot leave an account with zero active wallets.
+
+### Changed
+
+- **Consistent Live Currency Previews:** Added live formatted currency previews to Opening Balance inputs (Add & Edit Wallet) and Monthly Budget Limit inputs to prevent zero-count typos in IDR.
+- **Dynamic Version Display & Audit Governance:** Sourced the Settings footer version directly from `package.json`, bumped the Service Worker cache to `foliq-shell-v0-2-1`, and codified the mandatory Full Audit Gate (Bugs + Security + UI/UX before any newer version) in `AGENTS.md`.
+
 ## [0.2.0] - 2026-11-21
 
 ### Added
