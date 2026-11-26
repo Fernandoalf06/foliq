@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { CategoryGlyph, CloseIcon, TransferIcon } from "./icons";
+import { CategoryGlyph, CloseIcon, SpinnerIcon, TransferIcon } from "./icons";
 import { evaluateAmountExpression, hasMathOperator } from "@/lib/math-input";
 import { formatCurrency } from "@/lib/money";
 import { enqueueOfflineTransaction } from "@/lib/offline-queue";
@@ -127,18 +127,36 @@ function QuickEntryDialog({
   const entryCurrency = activeSourceWallet?.currency ?? currency;
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      amountInputRef.current?.focus();
-    }, 60);
+    // Only auto-focus on desktop fine-pointer devices so iOS Safari never auto-zooms on sheet open
+    let timer: number | undefined;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: fine)").matches
+    ) {
+      timer = window.setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 60);
+    }
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      window.clearTimeout(timer);
+      if (timer !== undefined) window.clearTimeout(timer);
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [onClose]);
+
+  const blurActiveField = () => {
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  };
+
+  const handleClose = () => {
+    blurActiveField();
+    onClose();
+  };
 
   const presets =
     entryCurrency === "IDR"
@@ -191,6 +209,7 @@ function QuickEntryDialog({
       return;
     }
 
+    blurActiveField();
     setSubmitting(true);
     const parsedDate = occurredLocal ? new Date(occurredLocal) : new Date();
     if (Number.isNaN(parsedDate.getTime())) {
@@ -261,17 +280,17 @@ function QuickEntryDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4"
+      className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4"
       role="presentation"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="quick-entry-title"
-        className="liquid-glass flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px]"
+        className="liquid-glass animate-sheet-in flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px]"
       >
         <div
           aria-hidden="true"
@@ -288,7 +307,7 @@ function QuickEntryDialog({
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label={
               isEditing ? "Close edit entry dialog" : "Close record entry dialog"
             }
@@ -439,17 +458,17 @@ function QuickEntryDialog({
                   value={targetWalletId}
                   onChange={(e) => setTargetWalletId(e.target.value)}
                   required
-                  className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm font-medium text-[var(--ink)]"
+                  className="h-12 w-full min-w-0 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-base font-medium text-[var(--ink)] sm:text-sm"
                 >
                   {selectableWallets.map((w) => (
                     <option key={w.id} value={w.id}>
-                      {w.name} ({w.type})
+                      {w.name} ({w.currency})
                     </option>
                   ))}
                 </select>
               </div>
             ) : (
-              <div>
+              <div className="min-w-0">
                 <label
                   htmlFor="entry-date"
                   className="mb-1.5 block text-sm font-medium text-[var(--ink)]"
@@ -461,7 +480,7 @@ function QuickEntryDialog({
                   type="datetime-local"
                   value={occurredLocal}
                   onChange={(e) => setOccurredLocal(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--ink)]"
+                  className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-base text-[var(--ink)] sm:text-sm"
                 />
               </div>
             )}
@@ -510,7 +529,7 @@ function QuickEntryDialog({
           )}
 
           {type === "TRANSFER" && (
-            <div>
+            <div className="min-w-0">
               <label
                 htmlFor="entry-transfer-date"
                 className="mb-1.5 block text-sm font-medium text-[var(--ink)]"
@@ -522,7 +541,7 @@ function QuickEntryDialog({
                 type="datetime-local"
                 value={occurredLocal}
                 onChange={(e) => setOccurredLocal(e.target.value)}
-                className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--ink)]"
+                className="block h-12 w-full min-w-0 max-w-full appearance-none rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 text-base text-[var(--ink)] sm:text-sm"
               />
             </div>
           )}
@@ -541,22 +560,25 @@ function QuickEntryDialog({
               placeholder="Merchant, item, or reference"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)]"
+              className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 text-base text-[var(--ink)] placeholder:text-[var(--ink-muted)] sm:text-sm"
             />
           </div>
 
           <button
             type="submit"
             disabled={submitting || selectableWallets.length === 0}
-            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-white transition-transform hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-white transition-transform hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-60"
           >
-            {submitting
-              ? isEditing
-                ? "Saving changes..."
-                : "Saving entry..."
-              : isEditing
-                ? "Save Changes"
-                : "Save Entry"}
+            {submitting && <SpinnerIcon className="h-4 w-4" />}
+            <span>
+              {submitting
+                ? isEditing
+                  ? "Saving changes..."
+                  : "Saving entry..."
+                : isEditing
+                  ? "Save Changes"
+                  : "Save Entry"}
+            </span>
           </button>
         </form>
       </div>

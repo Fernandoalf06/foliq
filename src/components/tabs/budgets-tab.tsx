@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CategoryGlyph, CopyIcon, TrashIcon } from "../icons";
+import { CategoryGlyph, CopyIcon, SpinnerIcon, TrashIcon } from "../icons";
 import { CategoriesManager } from "./categories-manager";
 import { RecurringSection } from "./recurring-section";
 import { formatCurrency } from "@/lib/money";
@@ -202,9 +202,13 @@ export function BudgetsTab({
               type="button"
               disabled={copyingBudgets}
               onClick={() => void handleCopyFromPrevious()}
-              className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3.5 text-xs font-semibold text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent-text)] disabled:opacity-50"
+              className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3.5 text-xs font-semibold text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent-text)] disabled:opacity-60"
             >
-              <CopyIcon className="h-3.5 w-3.5" />
+              {copyingBudgets ? (
+                <SpinnerIcon className="h-3.5 w-3.5" />
+              ) : (
+                <CopyIcon className="h-3.5 w-3.5" />
+              )}
               <span>
                 {copyingBudgets
                   ? "Copying..."
@@ -408,9 +412,10 @@ export function BudgetsTab({
             <button
               type="submit"
               disabled={budgetSubmitting}
-              className="h-12 w-full rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-60"
             >
-              {budgetSubmitting ? "Saving..." : "Save Monthly Cap"}
+              {budgetSubmitting && <SpinnerIcon className="h-4 w-4" />}
+              <span>{budgetSubmitting ? "Saving..." : "Save Monthly Cap"}</span>
             </button>
           </form>
         </section>

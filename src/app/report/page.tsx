@@ -217,11 +217,11 @@ export default async function MonthlyReportPage({
   const generatedDate = toLocalDateKey(new Date(), tzOffset);
 
   return (
-    <div className="min-h-dvh bg-[var(--ground)] px-4 py-6 text-[var(--ink)] sm:px-8 print:bg-white print:p-0 print:text-slate-900">
+    <div className="min-h-dvh bg-[var(--ground)] px-4 pb-10 text-[var(--ink)] safe-top-page safe-bottom sm:px-8 print:bg-white print:p-0 print:text-slate-900">
       <div className="mx-auto max-w-4xl">
         <ReportActions />
 
-        <article className="space-y-6 rounded-[24px] border border-[var(--border)] bg-[var(--surface-1)] p-6 sm:p-8 print:rounded-none print:border-0 print:bg-white print:p-0">
+        <article className="space-y-6 rounded-[24px] border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-8 print:rounded-none print:border-0 print:bg-white print:p-0">
           {/* Statement Header */}
           <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border)] pb-5 print:border-slate-300">
             <div className="flex items-center gap-3">
@@ -283,15 +283,17 @@ export default async function MonthlyReportPage({
               Active Wallets ({walletSummaries.length})
             </h2>
             <div className="overflow-x-auto rounded-xl border border-[var(--border)] print:border-slate-300">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-xs sm:text-sm">
                 <thead className="border-b border-[var(--border)] bg-[var(--surface-2)]/60 text-xs text-[var(--ink-muted)] print:border-slate-300 print:bg-slate-100 print:text-slate-700">
                   <tr>
-                    <th className="px-3.5 py-2.5 font-semibold">Wallet</th>
-                    <th className="px-3.5 py-2.5 font-semibold">Type</th>
-                    <th className="px-3.5 py-2.5 text-right font-semibold">
-                      Native Balance
+                    <th className="px-3 py-2.5 font-semibold sm:px-3.5">Wallet</th>
+                    <th className="hidden px-3.5 py-2.5 font-semibold sm:table-cell print:table-cell">
+                      Type
                     </th>
-                    <th className="px-3.5 py-2.5 text-right font-semibold">
+                    <th className="px-3 py-2.5 text-right font-semibold sm:px-3.5">
+                      Balance
+                    </th>
+                    <th className="hidden px-3.5 py-2.5 text-right font-semibold sm:table-cell print:table-cell">
                       In {user.currency}
                     </th>
                   </tr>
@@ -299,14 +301,26 @@ export default async function MonthlyReportPage({
                 <tbody className="divide-y divide-[var(--border)] print:divide-slate-200">
                   {walletSummaries.map((w) => (
                     <tr key={w.id}>
-                      <td className="px-3.5 py-2.5 font-semibold">{w.name}</td>
-                      <td className="px-3.5 py-2.5 text-xs text-[var(--ink-muted)] print:text-slate-600">
+                      <td className="px-3 py-2.5 sm:px-3.5">
+                        <p className="font-semibold text-[var(--ink)] print:text-slate-900">
+                          {w.name}
+                        </p>
+                        <p className="text-[11px] text-[var(--ink-muted)] sm:hidden print:hidden">
+                          {w.type} · {w.currency}
+                        </p>
+                      </td>
+                      <td className="hidden px-3.5 py-2.5 text-xs text-[var(--ink-muted)] sm:table-cell print:table-cell print:text-slate-600">
                         {w.type} · {w.currency}
                       </td>
-                      <td className="tabular-nums px-3.5 py-2.5 text-right font-medium">
-                        {formatCurrency(w.balance, w.currency)}
+                      <td className="tabular-nums whitespace-nowrap px-3 py-2.5 text-right font-semibold sm:px-3.5 sm:font-medium">
+                        <p>{formatCurrency(w.balance, w.currency)}</p>
+                        {w.currency !== user.currency && (
+                          <p className="text-[11px] font-medium text-[var(--ink-muted)] sm:hidden print:hidden">
+                            ≈ {formatCurrency(w.balanceInPrimary, user.currency)}
+                          </p>
+                        )}
                       </td>
-                      <td className="tabular-nums px-3.5 py-2.5 text-right font-semibold">
+                      <td className="tabular-nums hidden whitespace-nowrap px-3.5 py-2.5 text-right font-semibold sm:table-cell print:table-cell">
                         {formatCurrency(w.balanceInPrimary, user.currency)}
                       </td>
                     </tr>

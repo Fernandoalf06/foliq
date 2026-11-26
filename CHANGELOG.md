@@ -4,6 +4,29 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.1] - 2026-11-27
+
+### Fixed
+
+- **iPhone PWA Top Safe-Area Obstruction (`/report` & Header):** Applied `safe-top-page` (`calc(env(safe-area-inset-top, 0px) + 1rem)`) on `/report` and Auth views and added breathing space above `.safe-top` so `Back to Foliq`, `Print / Save as PDF`, and top controls are never hidden behind the iPhone Status Bar or Dynamic Island.
+- **Mobile Report Active Wallets Table:** Made `/report` wallet rows responsive on `390px` viewports so wallet names and balances never clip horizontally.
+- **iOS Auto-Zoom & Global Fixed 1:1 Viewport Lock:**
+  - Configured `maximumScale: 1` and `userScalable: false` in `src/app/layout.tsx` viewport metadata, added global `gesturestart`/`gesturechange`/`gestureend` and multi-touch pinch guards in `ThemeProvider`, and added `touch-action: pan-x pan-y` + `manipulation` across all interactive controls.
+  - Enforced `font-size: 16px` on mobile/touch `<input>`, `<select>`, and `<textarea>` elements globally so iOS Safari never auto-zooms when focusing Quick Entry or any form field.
+  - Disabled automatic input focusing on touch devices when opening Quick Entry, blurred active fields cleanly on submit/close, and constrained `input[type="datetime-local"]` widths on iOS Safari.
+- **Desktop Category Placeholder:** Shortened the `Add Custom Category` placeholder (`"Coffee, Gym, Hobby"`) so it never clips on desktop viewports.
+
+### Added
+
+- **Global Tactile Button Feedback, Loading Spinners & Micro-Animations:**
+  - Added global tactile press animation (`scale(0.97)` + smooth easing) across all enabled buttons, links, and tabs (respecting `prefers-reduced-motion`).
+  - Added `SpinnerIcon` visual loading states across Save Entry, Auth submit, Add Wallet, Save Monthly Cap, Copy Budgets, Create Category, Save Profile, Update Password, Sign Out, Report (PDF) navigation, and Back to Foliq / Print buttons.
+  - Added a slim top progress bar under the sticky header during month sync and server mutations, smooth enter animations for Quick Entry Sheet (`.animate-sheet-in`) and tab switches (`.animate-tab-in`), and an automatic confirmation toast after saving or editing a transaction.
+
+### Changed
+
+- Bumped Service Worker shell cache namespace to `foliq-shell-v1-2-1`.
+
 ## [1.2.0] - 2026-11-21
 
 ### Added

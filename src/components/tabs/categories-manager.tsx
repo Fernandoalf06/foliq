@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CategoryGlyph, EditIcon, TrashIcon } from "../icons";
+import { CategoryGlyph, EditIcon, SpinnerIcon, TrashIcon } from "../icons";
 import { CATEGORY_ICON_OPTIONS } from "@/lib/validators";
 import type { CategoryItem, CategoryType } from "@/lib/types";
 
@@ -317,7 +317,7 @@ export function CategoriesManager({
               type="text"
               required
               maxLength={32}
-              placeholder="Coffee, Gym, Side Project"
+              placeholder="Coffee, Gym, Hobby"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)]"
@@ -361,9 +361,10 @@ export function CategoriesManager({
         <button
           type="submit"
           disabled={creating}
-          className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--accent)] disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--accent)] disabled:opacity-60"
         >
-          {creating ? "Creating..." : "Create Category"}
+          {creating && <SpinnerIcon className="h-4 w-4" />}
+          <span>{creating ? "Creating..." : "Create Category"}</span>
         </button>
       </form>
     </section>

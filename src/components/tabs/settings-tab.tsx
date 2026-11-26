@@ -11,6 +11,7 @@ import {
   MoonIcon,
   PrinterIcon,
   SignOutIcon,
+  SpinnerIcon,
   SunIcon,
 } from "../icons";
 import { useTheme } from "../theme-provider";
@@ -68,6 +69,8 @@ export function SettingsTab({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const [openingReport, setOpeningReport] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [passwordFeedback, setPasswordFeedback] = useState<{
     type: "success" | "error";
     text: string;
@@ -228,9 +231,10 @@ export function SettingsTab({
             <button
               type="submit"
               disabled={profileSubmitting}
-              className="h-12 w-full rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-60"
             >
-              {profileSubmitting ? "Saving profile..." : "Save Profile"}
+              {profileSubmitting && <SpinnerIcon className="h-4 w-4" />}
+              <span>{profileSubmitting ? "Saving profile..." : "Save Profile"}</span>
             </button>
           </form>
         </section>
@@ -336,9 +340,12 @@ export function SettingsTab({
             <button
               type="submit"
               disabled={passwordSubmitting}
-              className="h-12 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--accent)] disabled:opacity-50"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--accent)] disabled:opacity-60"
             >
-              {passwordSubmitting ? "Updating password..." : "Update Password"}
+              {passwordSubmitting && <SpinnerIcon className="h-4 w-4" />}
+              <span>
+                {passwordSubmitting ? "Updating password..." : "Update Password"}
+              </span>
             </button>
           </form>
         </section>
@@ -389,10 +396,19 @@ export function SettingsTab({
           </div>
           <Link
             href={reportHref}
+            onClick={() => setOpeningReport(true)}
             className="mt-2.5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent-text)]"
           >
-            <PrinterIcon className="h-4 w-4" />
-            <span>Open {monthLabel} Printable Report (PDF)</span>
+            {openingReport ? (
+              <SpinnerIcon className="h-4 w-4 text-[var(--accent-text)]" />
+            ) : (
+              <PrinterIcon className="h-4 w-4" />
+            )}
+            <span>
+              {openingReport
+                ? "Opening report..."
+                : `Open ${monthLabel} Printable Report (PDF)`}
+            </span>
           </Link>
         </section>
 
@@ -425,11 +441,19 @@ export function SettingsTab({
 
             <button
               type="button"
-              onClick={() => void onSignOut()}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--expense)]/35 bg-[var(--expense-soft)] px-4 text-sm font-semibold text-[var(--expense)] hover:opacity-90"
+              disabled={signingOut}
+              onClick={() => {
+                setSigningOut(true);
+                void onSignOut();
+              }}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--expense)]/35 bg-[var(--expense-soft)] px-4 text-sm font-semibold text-[var(--expense)] hover:opacity-90 disabled:opacity-60"
             >
-              <SignOutIcon className="h-4 w-4" />
-              <span>Sign Out of Foliq</span>
+              {signingOut ? (
+                <SpinnerIcon className="h-4 w-4" />
+              ) : (
+                <SignOutIcon className="h-4 w-4" />
+              )}
+              <span>{signingOut ? "Signing out..." : "Sign Out of Foliq"}</span>
             </button>
 
             <p className="flex items-center gap-2 pt-1 text-xs text-[var(--ink-muted)]">

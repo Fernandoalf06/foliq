@@ -320,6 +320,15 @@ export function PrinterIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+export function SpinnerIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={`animate-spin ${className}`}>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.4" strokeOpacity="0.25" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function CategoryGlyph({
   icon,
   className = "h-4 w-4",

@@ -24,6 +24,7 @@ import {
   PrinterIcon,
   SettingsIcon,
   SignOutIcon,
+  SpinnerIcon,
   SunIcon,
   WalletIcon,
 } from "./icons";
@@ -88,6 +89,9 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const [openingReport, setOpeningReport] = useState(false);
+  const [busyAction, setBusyAction] = useState(false);
 
   const privacyMode = useSyncExternalStore(
     subscribePrivacy,
@@ -247,12 +251,14 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
   };
 
   const handleSignOut = async () => {
+    setSigningOut(true);
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     onSignedOut();
   };
 
   const handleDeleteTransaction = async (id: string) => {
     setActionError(null);
+    setBusyAction(true);
     try {
       const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -260,14 +266,18 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
         setActionError(json.error || "Failed to delete transaction.");
         return;
       }
+      setStatusNotice("Transaction deleted.");
       await loadDashboard(month);
     } catch {
       setActionError("Network error while deleting transaction.");
+    } finally {
+      setBusyAction(false);
     }
   };
 
   const handleRemoveWallet = async (id: string) => {
     setActionError(null);
+    setBusyAction(true);
     try {
       const res = await fetch(`/api/wallets/${id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -275,14 +285,18 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
         setActionError(json.error || "Failed to remove wallet.");
         return;
       }
+      setStatusNotice("Wallet updated.");
       await loadDashboard(month);
     } catch {
       setActionError("Network error while removing wallet.");
+    } finally {
+      setBusyAction(false);
     }
   };
 
   const handleRestoreWallet = async (id: string) => {
     setActionError(null);
+    setBusyAction(true);
     try {
       const res = await fetch(`/api/wallets/${id}`, {
         method: "PATCH",
@@ -294,14 +308,18 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
         setActionError(json.error || "Failed to restore wallet.");
         return;
       }
+      setStatusNotice("Wallet restored.");
       await loadDashboard(month);
     } catch {
       setActionError("Network error while restoring wallet.");
+    } finally {
+      setBusyAction(false);
     }
   };
 
   const handleDeleteBudget = async (id: string) => {
     setActionError(null);
+    setBusyAction(true);
     try {
       const res = await fetch(`/api/budgets?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
@@ -311,9 +329,12 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
         setActionError(json.error || "Failed to delete budget.");
         return;
       }
+      setStatusNotice("Budget removed.");
       await loadDashboard(month);
     } catch {
       setActionError("Network error while deleting budget.");
+    } finally {
+      setBusyAction(false);
     }
   };
 
@@ -497,10 +518,17 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
         <div className="space-y-2 border-t border-[var(--border)] pt-4">
           <Link
             href={reportHref}
+            onClick={() => setOpeningReport(true)}
             className="flex h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
           >
-            <PrinterIcon className="h-4 w-4" />
-            <span>{monthLabel} Report (PDF)</span>
+            {openingReport ? (
+              <SpinnerIcon className="h-4 w-4 text-[var(--accent-text)]" />
+            ) : (
+              <PrinterIcon className="h-4 w-4" />
+            )}
+            <span>
+              {openingReport ? "Opening report..." : `${monthLabel} Report (PDF)`}
+            </span>
           </Link>
           <a
             href={exportHref}
@@ -536,18 +564,31 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           </button>
           <button
             type="button"
+            disabled={signingOut}
             onClick={() => void handleSignOut()}
-            className="flex h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--expense)]"
+            className="flex h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-medium text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--expense)] disabled:opacity-60"
           >
-            <SignOutIcon className="h-4 w-4" />
-            <span>Sign Out</span>
+            {signingOut ? (
+              <SpinnerIcon className="h-4 w-4" />
+            ) : (
+              <SignOutIcon className="h-4 w-4" />
+            )}
+            <span>{signingOut ? "Signing out..." : "Sign Out"}</span>
           </button>
         </div>
       </aside>
 
       {/* Main Column */}
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--ground)]/95 px-3 py-2.5 backdrop-blur-sm safe-top sm:px-6">
+        <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--ground)]/95 px-3 pb-2.5 backdrop-blur-sm safe-top sm:px-6">
+          {(busyAction || Boolean(data && data.month !== month) || syncingQueue) && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-[var(--accent-soft)]"
+            >
+              <div className="animate-progress-bar h-full w-1/3 rounded-full bg-[var(--accent)]" />
+            </div>
+          )}
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
             <div className="flex shrink-0 items-center gap-2 lg:hidden">
               <FoliqMark className="h-7 w-7" />
@@ -797,10 +838,11 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           )}
 
           <div
+            key={activeTab}
             className={
               data && data.month !== month
-                ? "opacity-70 transition-opacity duration-150"
-                : "transition-opacity duration-150"
+                ? "animate-tab-in opacity-70 transition-opacity duration-150"
+                : "animate-tab-in transition-opacity duration-150"
             }
           >
             {data && activeTab === "overview" && (
@@ -966,7 +1008,14 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
           wallets={data.wallets}
           categories={data.categories}
           onClose={closeSheet}
-          onSaved={() => loadDashboard(month)}
+          onSaved={async () => {
+            setStatusNotice(
+              editingTransaction
+                ? "Transaction changes saved."
+                : "Entry saved to your ledger.",
+            );
+            await loadDashboard(month);
+          }}
           onOfflineQueued={() =>
             setStatusNotice(
               "Saved to offline queue. It will sync automatically when you reconnect.",

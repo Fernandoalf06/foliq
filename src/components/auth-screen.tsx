@@ -7,6 +7,7 @@ import {
   FoliqMark,
   LockIcon,
   MoonIcon,
+  SpinnerIcon,
   SunIcon,
 } from "./icons";
 import { useTheme } from "./theme-provider";
@@ -70,7 +71,7 @@ export function AuthScreen({
   };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--ground)] px-4 py-6 safe-top safe-bottom">
+    <div className="flex min-h-dvh flex-col bg-[var(--ground)] px-4 pb-6 safe-top-page safe-bottom">
       <header className="mx-auto flex w-full max-w-md items-center justify-between">
         <div className="flex items-center gap-2.5">
           <FoliqMark className="h-8 w-8" />
@@ -242,15 +243,18 @@ export function AuthScreen({
             <button
               type="submit"
               disabled={submitting || !ownerConfigured}
-              className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-white transition-transform hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-50"
+              className="mt-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-white transition-transform hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-60"
             >
-              {submitting
-                ? mode === "register"
-                  ? "Creating vault..."
-                  : "Signing in..."
-                : mode === "register"
-                  ? "Create Owner Account"
-                  : "Sign In"}
+              {submitting && <SpinnerIcon className="h-4 w-4" />}
+              <span>
+                {submitting
+                  ? mode === "register"
+                    ? "Creating vault..."
+                    : "Signing in..."
+                  : mode === "register"
+                    ? "Create Owner Account"
+                    : "Sign In"}
+              </span>
             </button>
           </form>
 

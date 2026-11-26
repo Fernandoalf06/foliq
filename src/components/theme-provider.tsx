@@ -43,6 +43,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
+
+    // Lock zoom across iOS Safari standalone PWA (blocks pinch-zoom & double-tap zoom)
+    const preventGesture = (e: Event) => {
+      e.preventDefault();
+    };
+    const preventPinch = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener("gesturestart", preventGesture, { passive: false });
+    document.addEventListener("gesturechange", preventGesture, { passive: false });
+    document.addEventListener("gestureend", preventGesture, { passive: false });
+    document.addEventListener("touchmove", preventPinch, { passive: false });
+
+    return () => {
+      document.removeEventListener("gesturestart", preventGesture);
+      document.removeEventListener("gesturechange", preventGesture);
+      document.removeEventListener("gestureend", preventGesture);
+      document.removeEventListener("touchmove", preventPinch);
+    };
   }, []);
 
   const toggleTheme = () => {

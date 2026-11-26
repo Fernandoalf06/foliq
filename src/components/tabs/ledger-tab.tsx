@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { DownloadIcon, PlusIcon, PrinterIcon } from "../icons";
+import { DownloadIcon, PlusIcon, PrinterIcon, SpinnerIcon } from "../icons";
 import { TransactionRow } from "../transaction-row";
 import { convertCurrencyAmount } from "@/lib/currency";
 import { formatCurrency, fromMinorUnits, toMinorUnits } from "@/lib/money";
@@ -57,6 +57,7 @@ export function LedgerTab({
   const [typeFilter, setTypeFilter] = useState<"ALL" | TransactionType>("ALL");
   const [walletFilter, setWalletFilter] = useState("ALL");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [openingReport, setOpeningReport] = useState(false);
   const [confirmDeleteTxId, setConfirmDeleteTxId] = useState<string | null>(
     null,
   );
@@ -224,10 +225,15 @@ export function LedgerTab({
             </a>
             <Link
               href={reportHref}
+              onClick={() => setOpeningReport(true)}
               className="inline-flex h-11 flex-1 items-center justify-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-2 text-xs font-semibold text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent-text)]"
             >
-              <PrinterIcon className="h-4 w-4 shrink-0" />
-              <span>PDF</span>
+              {openingReport ? (
+                <SpinnerIcon className="h-4 w-4 shrink-0 text-[var(--accent-text)]" />
+              ) : (
+                <PrinterIcon className="h-4 w-4 shrink-0" />
+              )}
+              <span>{openingReport ? "..." : "PDF"}</span>
             </Link>
           </div>
         </div>

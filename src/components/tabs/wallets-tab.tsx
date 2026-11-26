@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { EditIcon, RestoreIcon, TrashIcon } from "../icons";
+import { EditIcon, RestoreIcon, SpinnerIcon, TrashIcon } from "../icons";
 import { GoalsSection } from "./goals-section";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { formatCurrency } from "@/lib/money";
@@ -495,9 +495,10 @@ export function WalletsTab({
             <button
               type="submit"
               disabled={walletSubmitting}
-              className="h-12 w-full rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-60"
             >
-              {walletSubmitting ? "Adding..." : "Add Wallet"}
+              {walletSubmitting && <SpinnerIcon className="h-4 w-4" />}
+              <span>{walletSubmitting ? "Adding..." : "Add Wallet"}</span>
             </button>
           </div>
         </form>
