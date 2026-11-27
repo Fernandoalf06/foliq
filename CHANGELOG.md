@@ -4,6 +4,18 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.5] - 2026-11-27
+
+### Fixed
+
+- **iOS 26+ Native PWA Status-Bar Blur Removal (`src/app/layout.tsx`, `src/app/manifest.ts`, `src/app/globals.css`):**
+  - Removed `viewport-fit=cover` (paired with `statusBarStyle: "default"` and matching manifest `theme_color`) so re-added iPhone Home Screen PWAs render cleanly beneath a solid native status bar without WebKit's forced progressive top blur scrim.
+  - Made `.pwa-status-bar-shield` and standalone `.safe-top` / `.safe-top-page` adaptive using `clamp(0px, env(safe-area-inset-top, 0px), ...)` so newly re-added PWAs have zero extra top gap while existing cached Home Screen icons automatically gain extra vertical clearance below iOS 26+'s progressive blur zone.
+
+### Changed
+
+- Bumped Service Worker shell cache namespace to `foliq-shell-v1-2-5` and aligned offline fallback viewport metadata.
+
 ## [1.2.4] - 2026-11-27
 
 ### Fixed

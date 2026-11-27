@@ -1,4 +1,4 @@
-const CACHE_NAME = "foliq-shell-v1-2-4";
+const CACHE_NAME = "foliq-shell-v1-2-5";
 const STATIC_ASSETS = [
   "/manifest.webmanifest",
   "/icon-192",
@@ -10,7 +10,7 @@ const OFFLINE_HTML = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>Offline | Foliq</title>
   <style>
     :root { color-scheme: light dark; }

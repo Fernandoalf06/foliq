@@ -157,7 +157,9 @@
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
 }
 
-/* Installed iOS standalone PWA: opaque top-edge shield & guaranteed Dynamic Island clearance */
+/* Installed iOS standalone PWA: adaptive shield & blur-zone clearance.
+   - Re-added PWA without viewport-fit=cover (safe-area-inset-top = 0px): shield collapses to 0px and header uses crisp 14px padding under the solid native status bar.
+   - Existing cached PWA icon (safe-area-inset-top = 47-59px): shield caps the status bar and clamp() adds extra clearance so controls sit completely below iOS 26+ top blur. */
 @media (display-mode: standalone) {
   .pwa-status-bar-shield {
     display: block;
@@ -165,18 +167,24 @@
     top: 0;
     left: 0;
     right: 0;
-    height: max(env(safe-area-inset-top, 0px), 54px);
+    height: env(safe-area-inset-top, 0px);
     background-color: var(--ground);
     z-index: 40;
     pointer-events: none;
   }
 
   .safe-top {
-    padding-top: calc(max(env(safe-area-inset-top, 0px), 54px) + 1rem);
+    padding-top: calc(
+      env(safe-area-inset-top, 0px) + 0.875rem +
+        clamp(0px, env(safe-area-inset-top, 0px), 1.125rem)
+    );
   }
 
   .safe-top-page {
-    padding-top: calc(max(env(safe-area-inset-top, 0px), 54px) + 1.25rem);
+    padding-top: calc(
+      env(safe-area-inset-top, 0px) + 1rem +
+        clamp(0px, env(safe-area-inset-top, 0px), 1.25rem)
+    );
   }
 }
 
