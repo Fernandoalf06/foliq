@@ -4,6 +4,16 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.4] - 2026-11-27
+
+### Fixed
+
+- **Sticky Header & Report Action Bar Anchor (`src/app/globals.css`):** Replaced `overflow-x: hidden` with `overflow-x: clip` on `html` and `body` so `position: sticky; top: 0` on the opaque app `<header>` and `/report` action bar remains pinned while scrolling (preventing WebKit top-edge unanchoring on iOS Safari PWA) while preserving zero horizontal overflow.
+
+### Changed
+
+- Bumped Service Worker shell cache namespace to `foliq-shell-v1-2-4`.
+
 ## [1.2.3] - 2026-11-27
 
 ### Fixed
