@@ -79,6 +79,8 @@ function QuickEntryDialog({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const formScrollRef = useRef<HTMLFormElement>(null);
 
   const filteredCategories = categories.filter((c) => c.type === type);
   const effectiveCategoryId = filteredCategories.some(
@@ -127,6 +129,67 @@ function QuickEntryDialog({
   const entryCurrency = activeSourceWallet?.currency ?? currency;
 
   useEffect(() => {
+    // Lock background page scroll cleanly on iOS Safari PWA while the sheet is open
+    const scrollY = window.scrollY;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevHtmlOverscroll = html.style.overscrollBehavior;
+    const prevBodyPosition = body.style.position;
+    const prevBodyTop = body.style.top;
+    const prevBodyLeft = body.style.left;
+    const prevBodyRight = body.style.right;
+    const prevBodyWidth = body.style.width;
+    const prevBodyOverflow = body.style.overflow;
+
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+
+    // Trap touchmove inside the scrollable form so iOS Safari never chains scroll to the background
+    const overlayEl = overlayRef.current;
+    let lastTouchY = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        lastTouchY = e.touches[0].clientY;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const formEl = formScrollRef.current;
+      if (!formEl || !formEl.contains(e.target as Node)) {
+        e.preventDefault();
+        return;
+      }
+
+      const maxScroll = formEl.scrollHeight - formEl.clientHeight;
+      if (maxScroll <= 1) {
+        e.preventDefault();
+        return;
+      }
+
+      if (e.touches.length === 1) {
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - lastTouchY;
+        lastTouchY = currentY;
+
+        const atTop = formEl.scrollTop <= 0;
+        const atBottom = formEl.scrollTop >= maxScroll - 1;
+        if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    overlayEl?.addEventListener("touchstart", onTouchStart, { passive: true });
+    overlayEl?.addEventListener("touchmove", onTouchMove, { passive: false });
+
     // Only auto-focus on desktop fine-pointer devices so iOS Safari never auto-zooms on sheet open
     let timer: number | undefined;
     if (
@@ -141,9 +204,22 @@ function QuickEntryDialog({
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKeyDown);
+
     return () => {
       if (timer !== undefined) window.clearTimeout(timer);
       window.removeEventListener("keydown", onKeyDown);
+      overlayEl?.removeEventListener("touchstart", onTouchStart);
+      overlayEl?.removeEventListener("touchmove", onTouchMove);
+
+      html.style.overflow = prevHtmlOverflow;
+      html.style.overscrollBehavior = prevHtmlOverscroll;
+      body.style.position = prevBodyPosition;
+      body.style.top = prevBodyTop;
+      body.style.left = prevBodyLeft;
+      body.style.right = prevBodyRight;
+      body.style.width = prevBodyWidth;
+      body.style.overflow = prevBodyOverflow;
+      window.scrollTo(0, scrollY);
     };
   }, [onClose]);
 
@@ -280,7 +356,8 @@ function QuickEntryDialog({
 
   return (
     <div
-      className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4"
+      ref={overlayRef}
+      className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center overflow-hidden overscroll-none bg-black/45 p-0 sm:items-center sm:p-4"
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
@@ -290,15 +367,15 @@ function QuickEntryDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="quick-entry-title"
-        className="liquid-glass animate-sheet-in flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px]"
+        className="liquid-glass animate-sheet-in flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px]"
       >
         <div
           aria-hidden="true"
-          className="flex justify-center pt-2.5 sm:hidden"
+          className="flex shrink-0 justify-center pt-2.5 sm:hidden"
         >
           <span className="h-1 w-10 rounded-full bg-[var(--ink-muted)]/35" />
         </div>
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3.5 sm:py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-[var(--border)] px-5 py-3.5 sm:py-4">
           <h2
             id="quick-entry-title"
             className="text-lg font-bold text-[var(--ink)]"
@@ -318,8 +395,9 @@ function QuickEntryDialog({
         </div>
 
         <form
+          ref={formScrollRef}
           onSubmit={handleSubmit}
-          className="flex-1 space-y-5 overflow-y-auto bg-[var(--surface-1)]/92 px-5 py-5 safe-bottom"
+          className="flex-1 space-y-5 overflow-y-auto overscroll-y-contain touch-pan-y bg-[var(--surface-1)]/92 px-5 py-5 pb-8 safe-bottom"
         >
           <div
             role="tablist"

@@ -4,6 +4,16 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.2] - 2026-11-27
+
+### Fixed
+
+- **iOS Safari Quick Entry Background Scroll-Through Lock (`src/components/quick-entry-sheet.tsx`):** Locked `document.body` (`position: fixed` preserving exact `scrollY` offset on close), added `overscroll-y-contain` + `touch-pan-y` to the Quick Entry form, and trapped backdrop/header/boundary `touchmove` gestures so scrolling inside **Record Entry** exclusively scrolls the active sheet and never leaks to the background dashboard.
+
+### Changed
+
+- Bumped Service Worker shell cache namespace to `foliq-shell-v1-2-2`.
+
 ## [1.2.1] - 2026-11-27
 
 ### Fixed
