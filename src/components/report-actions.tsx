@@ -17,7 +17,7 @@ export function ReportActions() {
   };
 
   return (
-    <div className="no-print mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-4">
+    <div className="no-print sticky top-0 z-30 -mx-4 mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--ground)] px-4 pb-3.5 safe-top sm:-mx-8 sm:px-8">
       <Link
         href="/"
         onClick={() => setNavigatingBack(true)}

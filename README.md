@@ -6,7 +6,7 @@ Built with **Next.js App Router**, **TypeScript**, **Tailwind CSS**, **Neon Serv
 
 ---
 
-## Key Features (`v1.2.2`)
+## Key Features (`v1.2.3`)
 
 - **Privacy Mode & Daily Speed UX:** One-tap **Hide/Show Balances** toggle in the header and sidebar masks every monetary figure and chart tooltip (`••••••••`), paired with desktop keyboard shortcuts (`N`, `P`, `[`, `]`, `1`-`5`), one-tap **Today** month jump, proportional skeleton loaders, and auto-dismissing floating toasts.
 - **Smart Quick Entry with Inline Calculator & Offline Queue:** Floating Liquid Glass bottom dock with a one-tap `+` action, iOS sheet grabber handle, remembered last-used wallet, CSP-safe inline math calculator (`45000+18000`, `150000/3`), `Clear` chip, inline editing, and automatic local queueing + auto-sync when capturing offline.
@@ -221,7 +221,8 @@ Every change to Foliq follows the mandatory workflow defined in [AGENTS.md](./AG
 - **v1.1.0:** Privacy Mode (Hide/Show Balances across all views and charts), Smart Quick Entry (inline CSP-safe math calculator, remembered last wallet, Clear chip, iOS grabber), Overview Active Wallet quick-strip + MoM & daily average KPIs, Jump to Today, desktop keyboard shortcuts, floating auto-dismiss toast, and skeleton loaders.
 - **v1.2.0:** 1-Tap Copy Budgets from Previous Month (`POST /api/budgets/copy`), Category filter + dynamic multi-currency Filtered Subtotal bar in Ledger, full Category Manager (rename, 12-icon picker, safe delete with recurring-rule invariant), and sleek `.no-scrollbar` Active Wallets quick-strip.
 - **v1.2.1:** iPhone standalone PWA safe-area fix for `/report` and header controls, global 1:1 viewport zoom lock + `16px` touch input anti-zoom + iOS `datetime-local` fit, global tactile press feedback, inline loading spinners, top sync progress bar, smooth sheet/tab enter transitions, and automatic Save Entry confirmation toast.
-- **v1.2.2 (Current):** iOS Safari Quick Entry sheet body scroll lock (`position: fixed` preserving scroll offset + `overscroll-y-contain` + backdrop/boundary touchmove trap) so scrolling exclusively targets the active Record Entry form.
+- **v1.2.2:** iOS Safari Quick Entry sheet body scroll lock (`position: fixed` preserving scroll offset + `overscroll-y-contain` + backdrop/boundary touchmove trap) so scrolling exclusively targets the active Record Entry form.
+- **v1.2.3 (Current):** iOS 26+ standalone PWA top-blur mitigation (100% opaque sticky app & `/report` headers, standalone opaque status-bar shield with `54px` minimum Dynamic Island floor, `"default"` status bar style + live Light/Dark `theme-color` sync) and `48px` mobile CSV tap targets in Settings.
 
 ---
 

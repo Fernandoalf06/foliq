@@ -580,7 +580,7 @@ export function FoliqApp({ onSignedOut }: FoliqAppProps) {
 
       {/* Main Column */}
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--ground)]/95 px-3 pb-2.5 backdrop-blur-sm safe-top sm:px-6">
+        <header className="sticky top-0 z-30 w-full border-b border-[var(--border)] bg-[var(--ground)] px-3 pb-3 safe-top sm:px-6">
           {(busyAction || Boolean(data && data.month !== month) || syncingQueue) && (
             <div
               aria-hidden="true"

@@ -217,7 +217,7 @@ export default async function MonthlyReportPage({
   const generatedDate = toLocalDateKey(new Date(), tzOffset);
 
   return (
-    <div className="min-h-dvh bg-[var(--ground)] px-4 pb-10 text-[var(--ink)] safe-top-page safe-bottom sm:px-8 print:bg-white print:p-0 print:text-slate-900">
+    <div className="min-h-dvh bg-[var(--ground)] px-4 pb-10 text-[var(--ink)] safe-bottom sm:px-8 print:bg-white print:p-0 print:text-slate-900">
       <div className="mx-auto max-w-4xl">
         <ReportActions />
 

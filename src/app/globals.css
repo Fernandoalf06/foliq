@@ -141,8 +141,12 @@
   box-shadow: var(--glass-shadow), 0 0 0 1px var(--glass-ring);
 }
 
+.pwa-status-bar-shield {
+  display: none;
+}
+
 .safe-top {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 0.625rem);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
 }
 
 .safe-top-page {
@@ -151,6 +155,29 @@
 
 .safe-bottom {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+}
+
+/* Installed iOS standalone PWA: opaque top-edge shield & guaranteed Dynamic Island clearance */
+@media (display-mode: standalone) {
+  .pwa-status-bar-shield {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: max(env(safe-area-inset-top, 0px), 54px);
+    background-color: var(--ground);
+    z-index: 40;
+    pointer-events: none;
+  }
+
+  .safe-top {
+    padding-top: calc(max(env(safe-area-inset-top, 0px), 54px) + 1rem);
+  }
+
+  .safe-top-page {
+    padding-top: calc(max(env(safe-area-inset-top, 0px), 54px) + 1.25rem);
+  }
 }
 
 @keyframes foliq-fade-in {

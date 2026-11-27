@@ -381,14 +381,14 @@ export function SettingsTab({
           <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
             <a
               href="/api/export"
-              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
+              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] sm:flex-1"
             >
               <DownloadIcon className="h-4 w-4" />
               <span>Export All (CSV)</span>
             </a>
             <a
               href={monthExportHref}
-              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--accent)]"
+              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--accent)] sm:flex-1"
             >
               <DownloadIcon className="h-4 w-4" />
               <span>{monthLabel} CSV</span>

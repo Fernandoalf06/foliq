@@ -32,6 +32,20 @@ function getServerSnapshot(): Theme {
   return "light";
 }
 
+function syncThemeColorMeta(theme: Theme) {
+  if (typeof document === "undefined") return;
+  const color = theme === "dark" ? "#000000" : "#F5F6F8";
+  let meta = document.querySelector<HTMLMetaElement>(
+    'meta[name="theme-color"]:not([media])',
+  );
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "theme-color";
+    document.head.appendChild(meta);
+  }
+  meta.content = color;
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = useSyncExternalStore(
     subscribe,
@@ -40,6 +54,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    syncThemeColorMeta(getClientSnapshot());
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
@@ -70,6 +86,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = () => {
     const next: Theme = getClientSnapshot() === "dark" ? "light" : "dark";
     document.documentElement.classList.toggle("dark", next === "dark");
+    syncThemeColorMeta(next);
     try {
       localStorage.setItem("foliq-theme", next);
     } catch {

@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Foliq",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
   openGraph: {
     type: "website",
@@ -57,9 +57,17 @@ const themeInitScript = `
   try {
     var stored = localStorage.getItem('foliq-theme');
     var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (stored === 'dark' || (!stored && prefersDark)) {
+    var isDark = stored === 'dark' || (!stored && prefersDark);
+    if (isDark) {
       document.documentElement.classList.add('dark');
     }
+    var meta = document.querySelector('meta[name="theme-color"]:not([media])');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', isDark ? '#000000' : '#F5F6F8');
   } catch(e) {}
 })();
 `;
@@ -79,6 +87,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="antialiased">
+        <div aria-hidden="true" className="pwa-status-bar-shield no-print" />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

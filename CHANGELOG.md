@@ -4,6 +4,20 @@ All notable changes to **Foliq** are documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.3] - 2026-11-27
+
+### Fixed
+
+- **iOS 26+ Standalone PWA Top Blur & Header Obstruction (`src/app/layout.tsx`, `src/app/globals.css`, `src/components/foliq-app.tsx`, `src/components/report-actions.tsx`, `src/components/theme-provider.tsx`):**
+  - Made the main sticky `<header>` and `/report` action bar 100% solid opaque (`bg-[var(--ground)]`, removing `/95` alpha and `backdrop-blur-sm`) so WebKit recognizes the top bar as a valid opaque edge anchor instead of rendering a native progressive blur scrim over header controls.
+  - Added a standalone-only fixed opaque `.pwa-status-bar-shield` (`height: max(env(safe-area-inset-top, 0px), 54px)`) and enforced minimum standalone safe-area clearance (`calc(max(env(safe-area-inset-top, 0px), 54px) + 1rem)` / `+ 1.25rem`) so headers and `/report` buttons remain below the Dynamic Island and top blur fade zone even if iOS reports `0px` on cold start or route transitions.
+  - Switched `appleWebApp.statusBarStyle` from `"black-translucent"` to `"default"` and synced `<meta name="theme-color">` dynamically with Foliq's active Light (`#F5F6F8`) and Dark OLED (`#000000`) theme.
+- **Settings Mobile CSV Export Tap Targets (`src/components/tabs/settings-tab.tsx`):** Replaced mobile vertical `flex-1` collapse with `h-12 shrink-0 sm:flex-1` so `Export All (CSV)` and monthly CSV download buttons maintain a full `48px` tap target height on mobile screens.
+
+### Changed
+
+- Bumped Service Worker shell cache namespace to `foliq-shell-v1-2-3`.
+
 ## [1.2.2] - 2026-11-27
 
 ### Fixed
